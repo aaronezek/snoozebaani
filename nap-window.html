@@ -1,0 +1,1048 @@
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snoozebaani</title>
+<meta name="claude:viewport-fit-sides" content="cover">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: a night-sky header band carrying the name on its own; below it, a full-width grid of input tiles (3 / 2 / 1 columns), then a full-width answer band split into verdict, clock, reasons and tips */
+:root {
+  --bg: #EEF0F7;
+  --surface: #FFFFFF;
+  --ink: #181B33;
+  --muted: #5D6282;
+  --line: #DEE1EC;
+  --track: #EEF0F6;
+  --accent: #3F47BD;
+  --accent-ink: #FFFFFF;
+  --sun: #E09A2B;
+  --night: #2A2F63;
+  --good: #1F7F5B;
+  --warn: #A86F08;
+  --bad: #BA3E36;
+  --hdr-bg: #141836;
+  --hdr-ink: #F1F2FF;
+  --hdr-muted: #A7ACD4;
+  --c-sleep: #4F56D9;
+  --c-time: #C9800F;
+  --c-sleepy: #8A55D6;
+  --c-stress: #CF4568;
+  --c-caff: #985F30;
+  --c-free: #168C7D;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0D1020; --surface: #151930; --ink: #E7E9F6; --muted: #989DBE; --line: #262B47; --track: #1D2139;
+    --accent: #8D94FF; --accent-ink: #0D1020; --sun: #F2B65A; --night: #646CD8;
+    --good: #4CC496; --warn: #E6B04A; --bad: #F07068;
+    --hdr-bg: #090B18; --hdr-ink: #EEF0FF; --hdr-muted: #9BA0C8;
+    --c-sleep: #8D94FF; --c-time: #F2B65A; --c-sleepy: #B790FF; --c-stress: #FF809E; --c-caff: #D9A06C; --c-free: #4FD1BE;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0D1020; --surface: #151930; --ink: #E7E9F6; --muted: #989DBE; --line: #262B47; --track: #1D2139;
+  --accent: #8D94FF; --accent-ink: #0D1020; --sun: #F2B65A; --night: #646CD8;
+  --good: #4CC496; --warn: #E6B04A; --bad: #F07068;
+  --hdr-bg: #090B18; --hdr-ink: #EEF0FF; --hdr-muted: #9BA0C8;
+  --c-sleep: #8D94FF; --c-time: #F2B65A; --c-sleepy: #B790FF; --c-stress: #FF809E; --c-caff: #D9A06C; --c-free: #4FD1BE;
+  color-scheme: dark;
+}
+
+*, *::before, *::after { box-sizing: border-box; }
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+.lucide { width: 1em; height: 1em; flex: none; }
+
+/* ---------- Header band ---------- */
+.hero { position: relative; overflow: hidden; background: var(--hdr-bg); color: var(--hdr-ink); }
+.hero::before {
+  content: ""; position: absolute; inset: 0; pointer-events: none; opacity: .55;
+  background-image:
+    radial-gradient(1.4px 1.4px at 8% 28%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1px 1px at 19% 72%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1.6px 1.6px at 31% 18%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1px 1px at 44% 60%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1.3px 1.3px at 57% 24%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1px 1px at 66% 80%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1.5px 1.5px at 74% 42%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1px 1px at 88% 66%, var(--hdr-ink) 50%, transparent 52%),
+    radial-gradient(1.2px 1.2px at 94% 16%, var(--hdr-ink) 50%, transparent 52%);
+}
+.hero::after {
+  content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 82% -10%, color-mix(in srgb, var(--sun) 26%, transparent), transparent 42%);
+}
+.hero-in {
+  position: relative; z-index: 1; max-width: 1760px; margin: 0 auto;
+  padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  padding-block: 34px 32px;
+  display: flex; align-items: center; gap: 18px 22px; flex-wrap: wrap;
+}
+.logo { width: 66px; height: 66px; border-radius: 20px; display: grid; place-items: center; color: var(--sun);
+  background: color-mix(in srgb, var(--hdr-ink) 8%, transparent); border: 1px solid color-mix(in srgb, var(--hdr-ink) 16%, transparent); flex: none; }
+.logo .lucide { width: 34px; height: 34px; }
+.brand { min-width: 0; }
+.brand h1 { font-family: var(--f-display); font-weight: 800; font-size: clamp(2.4rem, 5.4vw, 4.2rem); line-height: .95; letter-spacing: -.035em; margin: 0; }
+.brand p { margin: 8px 0 0; color: var(--hdr-muted); font-size: 1.03rem; max-width: 44rem; }
+.reset { margin-left: auto; display: inline-flex; align-items: center; gap: 8px; min-height: 42px; padding: 0 18px; border-radius: 99px; cursor: pointer;
+  background: color-mix(in srgb, var(--hdr-ink) 8%, transparent); color: var(--hdr-ink); border: 1px solid color-mix(in srgb, var(--hdr-ink) 26%, transparent); font-weight: 700; font-size: .9rem; }
+.reset:hover { background: color-mix(in srgb, var(--hdr-ink) 16%, transparent); }
+.reset .lucide { width: 16px; height: 16px; }
+
+/* ---------- Page ---------- */
+.page {
+  max-width: 1760px; margin: 0 auto;
+  padding-left: max(24px, env(safe-area-inset-left, 0px)); padding-right: max(24px, env(safe-area-inset-right, 0px));
+  padding-block: 28px 110px;
+  display: grid; gap: 30px;
+}
+.sec { display: grid; gap: 14px; min-width: 0; }
+.sec-title { display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.step-n { width: 28px; height: 28px; border-radius: 50%; background: var(--ink); color: var(--surface); display: grid; place-items: center; font-family: var(--f-mono); font-size: .8rem; font-weight: 600; }
+.sec-title h2 { font-family: var(--f-display); font-size: 1.35rem; font-weight: 700; margin: 0; letter-spacing: -.01em; }
+.sec-title .note { margin-left: auto; display: inline-flex; align-items: center; gap: 6px; color: var(--muted); font-size: .84rem; }
+.sec-title .note .lucide { width: 14px; height: 14px; }
+
+/* ---------- Input tiles ---------- */
+.tiles { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 16px; margin: 0; }
+.tile {
+  --c: var(--accent);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 20px; padding: 18px;
+  display: grid; gap: 14px; align-content: start; min-width: 0;
+  transition: border-color .2s, box-shadow .2s;
+}
+.tile:focus-within, .tile:hover { border-color: color-mix(in srgb, var(--c) 45%, var(--line)); }
+.tile:focus-within { box-shadow: 0 0 0 4px color-mix(in srgb, var(--c) 12%, transparent); }
+.t-sleep { --c: var(--c-sleep); } .t-time { --c: var(--c-time); } .t-sleepy { --c: var(--c-sleepy); }
+.t-stress { --c: var(--c-stress); } .t-caff { --c: var(--c-caff); } .t-free { --c: var(--c-free); }
+.tile-head { display: flex; gap: 12px; align-items: center; min-width: 0; }
+.ico { width: 42px; height: 42px; border-radius: 13px; display: grid; place-items: center; flex: none;
+  background: color-mix(in srgb, var(--c) 15%, transparent); color: var(--c); }
+.ico .lucide { width: 22px; height: 22px; }
+.tile h3 { margin: 0; font-family: var(--f-display); font-size: 1.08rem; font-weight: 700; }
+.tile-head p { margin: 1px 0 0; font-size: .82rem; color: var(--muted); }
+.tile-head .tog { margin-left: auto; }
+.mini { display: inline-flex; align-items: center; gap: 5px; font-size: .78rem; color: var(--muted); font-weight: 700; text-transform: uppercase; letter-spacing: .06em; }
+.mini .lucide { width: 13px; height: 13px; color: var(--c); }
+
+.steppers { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 12px; }
+.stepper { display: grid; gap: 6px; min-width: 0; }
+.step { display: grid; grid-template-columns: 42px minmax(0, 1fr) 42px; align-items: center; background: var(--track); border-radius: 13px; padding: 4px; }
+.step button { height: 42px; border: 0; border-radius: 10px; background: var(--surface); cursor: pointer; display: grid; place-items: center; box-shadow: 0 1px 2px rgb(0 0 0 / .12); }
+.step button:hover { color: var(--c); }
+.step button .lucide { width: 17px; height: 17px; }
+.step output { text-align: center; font-family: var(--f-mono); font-weight: 600; font-size: 1.15rem; font-variant-numeric: tabular-nums; white-space: nowrap; }
+
+.times { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 10px; }
+.tfield { display: grid; gap: 6px; min-width: 0; }
+input[type="time"] {
+  width: 100%; min-width: 0; min-height: 50px; padding: 0 10px;
+  font-family: var(--f-mono); font-size: .95rem; font-weight: 600; color: var(--ink);
+  background: var(--track); border: 1px solid transparent; border-radius: 12px;
+}
+input[type="time"]:focus { border-color: var(--c); outline: none; }
+
+.seg { display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 4px; padding: 4px; background: var(--track); border-radius: 14px; min-width: 0; }
+.seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { display: flex; flex-direction: column; align-items: center; justify-content: center; gap: 5px; text-align: center;
+  padding: 6px 2px; height: 70px; overflow: hidden; border-radius: 10px; font-size: .78rem; line-height: 1.1; color: var(--muted); cursor: pointer; transition: background .15s, color .15s; }
+/* Reserve the bold width so selecting an option never re-wraps its text */
+.lt { display: inline-grid; justify-items: center; }
+.lt::after { content: attr(data-t); font-weight: 700; height: 0; visibility: hidden; overflow: hidden; }
+.seg label .lucide { width: 20px; height: 20px; }
+.seg label:hover { color: var(--ink); }
+.seg input:checked + label { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 3px rgb(0 0 0 / .14); }
+.seg input:checked + label .lucide { color: var(--c); }
+.seg input:focus-visible + label { outline: 2px solid var(--c); outline-offset: 1px; }
+
+.tog { position: relative; display: inline-flex; cursor: pointer; }
+.tog input { position: absolute; opacity: 0; pointer-events: none; }
+.tog span { display: inline-flex; align-items: center; gap: 7px; min-height: 34px; padding: 0 13px; border: 1px solid var(--line); border-radius: 99px; font-size: .84rem; color: var(--muted); white-space: nowrap; transition: background .15s, color .15s; }
+.tog span::before { content: ""; width: 9px; height: 9px; border-radius: 50%; border: 1.5px solid currentColor; }
+.tog input:checked + span { background: color-mix(in srgb, var(--c) 14%, transparent); border-color: var(--c); color: var(--c); font-weight: 700; }
+.tog input:checked + span::before { background: currentColor; }
+.tog input:focus-visible + span { outline: 2px solid var(--c); outline-offset: 2px; }
+
+.qadd { display: flex; flex-wrap: wrap; gap: 7px; }
+.qadd button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 12px 0 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-size: .84rem; cursor: pointer; white-space: nowrap; }
+.qadd button .lucide { width: 16px; height: 16px; color: var(--c); }
+.qadd button:hover { border-color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--surface)); }
+.qadd b { font-family: var(--f-mono); font-weight: 400; color: var(--muted); font-size: .72rem; }
+.dlist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 7px; }
+.dlist:empty { display: none; }
+.dchip { display: inline-flex; align-items: center; gap: 4px; background: color-mix(in srgb, var(--c) 15%, transparent); border-radius: 99px; padding: 2px 3px 2px 10px; font-size: .83rem; font-weight: 700; }
+.dchip > .lucide { width: 15px; height: 15px; color: var(--c); }
+.dchip input[type="time"] { width: auto; min-height: 30px; padding: 0 2px; background: transparent; font-size: .78rem; font-weight: 400; border: 0; }
+.dchip button { width: 28px; height: 28px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.dchip button:hover { background: var(--surface); color: var(--bad); }
+.dchip button .lucide { width: 14px; height: 14px; }
+.caff-sum { display: flex; align-items: center; gap: 7px; font-family: var(--f-mono); font-size: .78rem; color: var(--muted); margin: 0; }
+.caff-sum .lucide { width: 14px; height: 14px; color: var(--c); }
+
+.event-row { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 12px; align-items: end; }
+.qset { display: flex; flex-wrap: wrap; gap: 6px; }
+.qset button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-size: .82rem; cursor: pointer; white-space: nowrap; }
+.qset button:hover { border-color: var(--c); color: var(--c); background: color-mix(in srgb, var(--c) 8%, var(--surface)); }
+.gap-info { display: flex; align-items: center; gap: 9px; margin: 0; padding: 10px 12px; border-radius: 12px; font-size: .86rem; line-height: 1.35;
+  background: color-mix(in srgb, var(--c) 10%, transparent); }
+.gap-info .lucide { width: 17px; height: 17px; color: var(--c); }
+.gap-info b { font-family: var(--f-mono); font-weight: 600; }
+
+/* ---------- Quote of the day ---------- */
+.quote { position: relative; overflow: hidden; display: grid; grid-template-columns: auto minmax(0, 1fr); gap: 20px; align-items: start;
+  padding: 28px 30px; border-radius: 24px; background: var(--hdr-bg); color: var(--hdr-ink); }
+.quote::after { content: ""; position: absolute; inset: 0; pointer-events: none;
+  background: radial-gradient(circle at 100% 0%, color-mix(in srgb, var(--sun) 20%, transparent), transparent 45%); }
+.q-ic { position: relative; z-index: 1; width: 50px; height: 50px; border-radius: 15px; display: grid; place-items: center; background: color-mix(in srgb, var(--sun) 18%, transparent); color: var(--sun); }
+.q-ic .lucide { width: 24px; height: 24px; }
+.q-body { position: relative; z-index: 1; min-width: 0; }
+.q-label { margin: 0; font-family: var(--f-mono); font-size: .72rem; letter-spacing: .08em; text-transform: uppercase; color: var(--hdr-muted); }
+.quote blockquote { margin: 8px 0 0; font-family: var(--f-display); font-weight: 500; font-size: clamp(1.25rem, 2.2vw, 1.9rem); line-height: 1.25; letter-spacing: -.01em; text-wrap: balance; max-width: 62ch; }
+.q-who { margin: 10px 0 0; color: var(--sun); font-weight: 700; }
+.q-more { display: block; margin-top: 10px; font-size: .78rem; }
+.q-more a { color: var(--hdr-muted); }
+
+/* ---------- Answer band ---------- */
+.answer {
+  --k: var(--accent);
+  display: grid; grid-template-columns: minmax(0, 1.25fr) minmax(0, 270px) minmax(0, 1.3fr) minmax(0, 1fr);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 24px; overflow: hidden;
+  box-shadow: 0 20px 44px -30px rgb(20 24 70 / .5);
+}
+[data-kind="nap"] { --k: var(--good); }
+[data-kind="short"] { --k: var(--accent); }
+[data-kind="rest"] { --k: var(--warn); }
+[data-kind="skip"] { --k: var(--bad); }
+[data-kind="bed"] { --k: var(--night); }
+.a-col { padding: 22px; min-width: 0; display: grid; gap: 14px; align-content: start; border-left: 1px solid var(--line); }
+.a-verdict { border-left: 0; background: linear-gradient(165deg, color-mix(in srgb, var(--k) 16%, var(--surface)), var(--surface) 72%); }
+.a-col h3 { display: flex; align-items: center; gap: 8px; margin: 0; font-family: var(--f-display); font-size: 1rem; font-weight: 700; }
+.a-col h3 .lucide { width: 18px; height: 18px; color: var(--k); }
+
+.v-top { display: flex; gap: 14px; align-items: center; }
+.v-badge { width: 60px; height: 60px; border-radius: 18px; display: grid; place-items: center; background: var(--k); color: var(--surface); flex: none; transition: background .3s; }
+.v-badge .lucide { width: 30px; height: 30px; }
+.pill { display: inline-block; font-family: var(--f-mono); font-size: .7rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; padding: 4px 9px; border-radius: 99px; background: color-mix(in srgb, var(--k) 16%, transparent); color: var(--k); white-space: nowrap; }
+.v-title { font-family: var(--f-display); font-size: clamp(1.7rem, 2.3vw, 2.3rem); font-weight: 800; line-height: 1.02; letter-spacing: -.025em; margin: 6px 0 0; text-wrap: balance; }
+.v-sub { margin: 0; color: var(--muted); }
+.plan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 8px; }
+.stat { display: grid; gap: 4px; padding: 10px 12px; background: var(--surface); border: 1px solid var(--line); border-radius: 13px; min-width: 0; }
+.stat .sl { display: flex; align-items: center; gap: 5px; font-size: .66rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); white-space: nowrap; }
+.stat .sl .lucide { width: 13px; height: 13px; color: var(--k); }
+.stat b { font-family: var(--f-mono); font-size: 1.08rem; font-weight: 600; font-variant-numeric: tabular-nums; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.meter { display: grid; gap: 6px; }
+.meter-head { display: flex; justify-content: space-between; font-size: .78rem; color: var(--muted); }
+.meter-head b { font-family: var(--f-mono); color: var(--ink); }
+.meter-track { position: relative; height: 10px; border-radius: 99px;
+  background: linear-gradient(to right,
+    color-mix(in srgb, var(--bad) 32%, var(--track)) 0 56.7%,
+    color-mix(in srgb, var(--accent) 32%, var(--track)) 56.7% 70.8%,
+    color-mix(in srgb, var(--good) 40%, var(--track)) 70.8% 100%); }
+.meter-dot { position: absolute; top: 50%; width: 20px; height: 20px; border-radius: 50%; background: var(--surface); border: 4px solid var(--k); transform: translate(-50%, -50%); transition: left .35s ease; }
+.meter-lbls { display: flex; justify-content: space-between; font-family: var(--f-mono); font-size: .68rem; color: var(--muted); }
+
+.a-dial { justify-items: center; }
+.dial { width: 100%; max-width: 220px; height: auto; display: block; }
+.d-track { stroke: var(--track); }
+.d-sleep { stroke: var(--night); }
+.d-dip { stroke: color-mix(in srgb, var(--sun) 80%, transparent); }
+.d-late { stroke: color-mix(in srgb, var(--bad) 34%, transparent); }
+.d-nap { stroke: var(--k); }
+.d-tick { stroke: var(--muted); opacity: .45; }
+.d-lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+.d-time { fill: var(--ink); font-family: var(--f-display); font-size: 28px; font-weight: 800; }
+.d-sub { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+.d-now { fill: var(--surface); stroke: var(--ink); stroke-width: 3; }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 6px 12px; font-size: .78rem; justify-self: stretch; }
+.legend li { display: flex; gap: 7px; align-items: center; }
+.sw { width: 14px; height: 6px; border-radius: 99px; flex: none; }
+.sw.sleep { background: var(--night); }
+.sw.dip { background: color-mix(in srgb, var(--sun) 80%, transparent); }
+.sw.late { background: color-mix(in srgb, var(--bad) 34%, transparent); }
+.sw.nap { background: var(--k); }
+.sw.now { width: 11px; height: 11px; background: var(--surface); border: 2.5px solid var(--ink); }
+.sw.evt { width: 9px; height: 9px; border-radius: 2px; transform: rotate(45deg); background: var(--c-free); }
+.d-evt { fill: var(--c-free); stroke: var(--surface); stroke-width: 2; }
+
+.factors { list-style: none; margin: 0; padding: 0; display: grid; }
+.factor { display: grid; grid-template-columns: 32px minmax(0, 1fr) 58px 34px; gap: 10px; align-items: center; padding-block: 8px; border-top: 1px solid var(--line); }
+.factor:first-child { border-top: 0; }
+.f-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: var(--track); color: var(--muted); }
+.f-ic.pos { background: color-mix(in srgb, var(--good) 14%, transparent); color: var(--good); }
+.f-ic.neg { background: color-mix(in srgb, var(--bad) 14%, transparent); color: var(--bad); }
+.f-ic .lucide { width: 16px; height: 16px; }
+.f-text { min-width: 0; font-size: .82rem; line-height: 1.3; }
+.f-text b { display: block; font-size: .88rem; }
+.f-text span { color: var(--muted); }
+.f-bar { position: relative; height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.f-bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .5; }
+.f-fill { position: absolute; top: 0; bottom: 0; transition: width .35s ease; }
+.f-fill.pos { left: 50%; background: var(--good); }
+.f-fill.neg { right: 50%; background: var(--bad); }
+.f-val { font-family: var(--f-mono); font-size: .82rem; text-align: right; font-variant-numeric: tabular-nums; }
+.f-val.pos { color: var(--good); } .f-val.neg { color: var(--bad); } .f-val.zero { color: var(--muted); }
+
+.tips { list-style: none; margin: 0; padding: 0; display: grid; gap: 10px; }
+.tips li { display: grid; grid-template-columns: 32px minmax(0, 1fr); gap: 10px; align-items: center; font-size: .9rem; line-height: 1.35; }
+.t-ic { width: 32px; height: 32px; border-radius: 10px; display: grid; place-items: center; background: color-mix(in srgb, var(--k) 14%, transparent); color: var(--k); }
+.t-ic .lucide { width: 16px; height: 16px; }
+
+footer { color: var(--muted); font-size: .8rem; display: flex; align-items: center; gap: 8px; }
+footer .lucide { width: 14px; height: 14px; }
+footer p { margin: 0; }
+
+/* ---------- Floating verdict bar ---------- */
+.mbar {
+  --k: var(--accent);
+  position: fixed; left: 50%; transform: translateX(-50%); z-index: 20;
+  bottom: calc(14px + env(safe-area-inset-bottom, 0px));
+  width: min(560px, calc(100% - 32px));
+  display: flex; align-items: center; gap: 10px; padding: 8px 8px 8px 10px;
+  background: var(--surface); border: 1px solid var(--line); border-radius: 18px;
+  box-shadow: 0 16px 40px -14px rgb(10 12 40 / .45);
+}
+.m-ic { width: 36px; height: 36px; border-radius: 11px; display: grid; place-items: center; background: var(--k); color: var(--surface); flex: none; }
+.m-ic .lucide { width: 19px; height: 19px; }
+.mbar .m-text { flex: 1; min-width: 0; font-weight: 700; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mbar .m-text small { display: block; font-weight: 400; color: var(--muted); font-size: .76rem; }
+.mbar button { display: inline-flex; align-items: center; gap: 6px; min-height: 38px; padding: 0 14px; border: 0; border-radius: 12px; background: var(--ink); color: var(--surface); font-weight: 700; font-size: .85rem; cursor: pointer; white-space: nowrap; }
+.mbar button .lucide { width: 15px; height: 15px; }
+
+/* ---------- Responsive ---------- */
+@media (max-width: 1320px) {
+  .answer { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .a-col { border-left: 0; }
+  .a-dial, .a-tips { border-left: 1px solid var(--line); }
+  .a-why, .a-tips { border-top: 1px solid var(--line); }
+}
+@media (max-width: 1100px) {
+  .tiles { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+}
+@media (max-width: 760px) {
+  .tiles { grid-template-columns: minmax(0, 1fr); }
+  .answer { grid-template-columns: minmax(0, 1fr); }
+  .a-dial, .a-tips { border-left: 0; }
+  .a-col { border-top: 1px solid var(--line); }
+  .a-verdict { border-top: 0; }
+  .hero-in { padding-block: 24px 22px; }
+  .logo { width: 52px; height: 52px; border-radius: 16px; }
+  .logo .lucide { width: 26px; height: 26px; }
+  .reset { margin-left: 0; }
+}
+@media (max-width: 480px) {
+  .page, .hero-in { padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px)); }
+  .tile, .a-col { padding: 16px; }
+  .times { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .tfield.now { grid-column: 1 / -1; }
+  .seg label { font-size: .7rem; height: 62px; }
+  .event-row { grid-template-columns: minmax(0, 1fr); }
+  .quote { grid-template-columns: minmax(0, 1fr); padding: 22px; }
+  .plan { grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 6px; }
+  .stat { padding: 8px; }
+  .stat b { font-size: .92rem; }
+  .brand p { font-size: .92rem; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+
+<header class="hero">
+  <div class="hero-in">
+    <div class="logo"><i data-lucide="moon-star"></i></div>
+    <div class="brand">
+      <h1>Snoozebaani</h1>
+      <p>Should you nap right now? Tap in a few numbers and your answer updates instantly.</p>
+    </div>
+    <button type="button" class="reset" id="resetBtn"><i data-lucide="rotate-ccw"></i>Reset</button>
+  </div>
+</header>
+
+<main class="page">
+  <section class="sec" aria-labelledby="h-inputs">
+    <div class="sec-title">
+      <span class="step-n">1</span><h2 id="h-inputs">Your numbers</h2>
+      <span class="note"><i data-lucide="hard-drive"></i>Saved on this device only</span>
+    </div>
+
+    <form class="tiles" id="form" novalidate>
+      <div class="tile t-sleep">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="bed-double"></i></span>
+          <div><h3>Sleep</h3><p>Last night vs. what you need</p></div>
+        </div>
+        <div class="steppers">
+          <div class="stepper">
+            <span class="mini"><i data-lucide="moon"></i>Got</span>
+            <div class="step" data-field="sleepHours" data-min="0" data-max="14" data-step="0.5">
+              <button type="button" data-d="-1" aria-label="Less sleep"><i data-lucide="minus"></i></button>
+              <output id="sleepHoursOut" aria-live="polite">6h</output>
+              <button type="button" data-d="1" aria-label="More sleep"><i data-lucide="plus"></i></button>
+            </div>
+          </div>
+          <div class="stepper">
+            <span class="mini"><i data-lucide="target"></i>Need</span>
+            <div class="step" data-field="sleepNeed" data-min="5" data-max="10" data-step="0.5">
+              <button type="button" data-d="-1" aria-label="Need less sleep"><i data-lucide="minus"></i></button>
+              <output id="sleepNeedOut" aria-live="polite">8h</output>
+              <button type="button" data-d="1" aria-label="Need more sleep"><i data-lucide="plus"></i></button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      <div class="tile t-time">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="clock-3"></i></span>
+          <div><h3>Times</h3><p>Your day so far</p></div>
+          <label class="tog" for="liveNow"><input type="checkbox" id="liveNow" checked><span>Live clock</span></label>
+        </div>
+        <div class="times">
+          <label class="tfield"><span class="mini"><i data-lucide="sunrise"></i>Woke</span><input type="time" id="wakeTime" value="07:00"></label>
+          <label class="tfield"><span class="mini"><i data-lucide="moon"></i>Bed</span><input type="time" id="bedTime" value="23:00"></label>
+          <label class="tfield now"><span class="mini"><i data-lucide="clock"></i>Now</span><input type="time" id="nowTime" value="14:00"></label>
+        </div>
+      </div>
+
+      <div class="tile t-sleepy">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="battery-low"></i></span>
+          <div><h3 id="lblSleepy">Sleepiness</h3><p>How heavy do your eyes feel?</p></div>
+        </div>
+        <div class="seg" role="radiogroup" aria-labelledby="lblSleepy">
+          <input type="radio" name="sleepiness" id="sl1" value="1"><label for="sl1"><i data-lucide="battery-full"></i><span class="lt" data-t="Alert">Alert</span></label>
+          <input type="radio" name="sleepiness" id="sl2" value="2"><label for="sl2"><i data-lucide="battery-medium"></i><span class="lt" data-t="Fine">Fine</span></label>
+          <input type="radio" name="sleepiness" id="sl3" value="3"><label for="sl3"><i data-lucide="battery-low"></i><span class="lt" data-t="Tired">Tired</span></label>
+          <input type="radio" name="sleepiness" id="sl4" value="4"><label for="sl4"><i data-lucide="battery"></i><span class="lt" data-t="Drowsy">Drowsy</span></label>
+          <input type="radio" name="sleepiness" id="sl5" value="5"><label for="sl5"><i data-lucide="battery-warning"></i><span class="lt" data-t="Nodding off">Nodding off</span></label>
+        </div>
+      </div>
+
+      <div class="tile t-stress">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="heart-pulse"></i></span>
+          <div><h3 id="lblStress">Stress</h3><p>Stress makes it harder to drift off</p></div>
+        </div>
+        <div class="seg" role="radiogroup" aria-labelledby="lblStress">
+          <input type="radio" name="stress" id="st1" value="1"><label for="st1"><i data-lucide="leaf"></i><span class="lt" data-t="Calm">Calm</span></label>
+          <input type="radio" name="stress" id="st2" value="2"><label for="st2"><i data-lucide="smile"></i><span class="lt" data-t="Low">Low</span></label>
+          <input type="radio" name="stress" id="st3" value="3"><label for="st3"><i data-lucide="meh"></i><span class="lt" data-t="Some">Some</span></label>
+          <input type="radio" name="stress" id="st4" value="4"><label for="st4"><i data-lucide="frown"></i><span class="lt" data-t="High">High</span></label>
+          <input type="radio" name="stress" id="st5" value="5"><label for="st5"><i data-lucide="zap"></i><span class="lt" data-t="Wired">Wired</span></label>
+        </div>
+      </div>
+
+      <div class="tile t-caff">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="coffee"></i></span>
+          <div><h3>Caffeine</h3><p>Tap a drink to log it at the current time</p></div>
+        </div>
+        <div class="qadd" id="qadd" aria-label="Add a drink"></div>
+        <ul class="dlist" id="drinkList" aria-label="Drinks today"></ul>
+        <p class="caff-sum" id="caffSum"></p>
+      </div>
+
+      <div class="tile t-free">
+        <div class="tile-head">
+          <span class="ico"><i data-lucide="calendar-clock"></i></span>
+          <div><h3>Next event</h3><p>We'll fit your nap in before it</p></div>
+        </div>
+        <div class="event-row">
+          <label class="tfield"><span class="mini"><i data-lucide="calendar"></i>Starts at</span><input type="time" id="eventTime"></label>
+          <div class="qset" aria-label="Quick set">
+            <button type="button" data-in="30">In 30m</button>
+            <button type="button" data-in="60">In 1h</button>
+            <button type="button" data-in="120">In 2h</button>
+            <button type="button" data-in="none">Nothing planned</button>
+          </div>
+        </div>
+        <p class="gap-info" id="gapInfo"></p>
+        <label class="tog" for="needSharp"><input type="checkbox" id="needSharp"><span>I must be sharp right after</span></label>
+      </div>
+    </form>
+  </section>
+
+  <section class="sec" aria-labelledby="h-answer" id="result">
+    <div class="sec-title"><span class="step-n">2</span><h2 id="h-answer">Your answer</h2></div>
+    <div class="answer" id="card" data-kind="nap" aria-live="polite">
+      <div class="a-col a-verdict">
+        <div class="v-top">
+          <span class="v-badge" id="vBadge"></span>
+          <div><span class="pill" id="vPill">Nap</span><h2 class="v-title" id="vTitle">Take a nap</h2></div>
+        </div>
+        <p class="v-sub" id="vSub"></p>
+        <div class="plan" id="plan"></div>
+        <div class="meter">
+          <div class="meter-head"><span>Nap score</span><b id="scoreVal">0</b></div>
+          <div class="meter-track"><span class="meter-dot" id="meterDot"></span></div>
+          <div class="meter-lbls" aria-hidden="true"><span>Skip</span><span>Short nap</span><span>Nap</span></div>
+        </div>
+      </div>
+
+      <div class="a-col a-dial">
+        <h3><i data-lucide="sun-moon"></i>Your 24 hours</h3>
+        <svg class="dial" id="dial" viewBox="0 0 240 240" role="img" aria-label="24-hour clock showing your sleep, afternoon dip and nap"></svg>
+        <ul class="legend">
+          <li><i class="sw sleep"></i>Night sleep</li>
+          <li><i class="sw dip"></i>Afternoon dip</li>
+          <li><i class="sw late"></i>Too close to bed</li>
+          <li id="legNap"><i class="sw nap"></i>Your nap</li>
+          <li><i class="sw now"></i>Now</li>
+          <li id="legEvt"><i class="sw evt"></i>Next event</li>
+        </ul>
+      </div>
+
+      <div class="a-col a-why">
+        <h3><i data-lucide="scale"></i>Why</h3>
+        <ul class="factors" id="factors"></ul>
+      </div>
+
+      <div class="a-col a-tips">
+        <h3><i data-lucide="lightbulb"></i><span id="tipsTitle">Before you lie down</span></h3>
+        <ul class="tips" id="tips"></ul>
+      </div>
+    </div>
+  </section>
+
+  <section class="quote" aria-label="Quote of the day">
+    <span class="q-ic"><i data-lucide="quote"></i></span>
+    <div class="q-body">
+      <p class="q-label">Quote of the day · <span id="qDate"></span></p>
+      <blockquote id="qText"></blockquote>
+      <p class="q-who">— <span id="qWho"></span></p>
+      <small class="q-more">Quotes via <a href="https://www.azquotes.com/quotes/topics/sleep.html" target="_blank" rel="noopener">AZQuotes</a></small>
+    </div>
+  </section>
+
+  <footer><i data-lucide="info"></i><p>General guidance, not medical advice. If you're regularly exhausted despite enough sleep, talk to a doctor.</p></footer>
+</main>
+
+<div class="mbar" id="mbar" hidden>
+  <span class="m-ic" id="mIcon"></span>
+  <span class="m-text" id="mText"></span>
+  <button type="button" id="mSee">See answer<i data-lucide="arrow-down"></i></button>
+</div>
+
+<script src="https://cdn.jsdelivr.net/npm/lucide@0.454.0/dist/umd/lucide.min.js"></script>
+<script>
+(() => {
+  const DRINKS = [
+    { id: 'coffee', name: 'Coffee', mg: 95, icon: 'coffee' },
+    { id: 'espresso', name: 'Espresso', mg: 65, icon: 'bean' },
+    { id: 'coldbrew', name: 'Cold brew', mg: 200, icon: 'glass-water' },
+    { id: 'blacktea', name: 'Black tea', mg: 47, icon: 'leaf' },
+    { id: 'greentea', name: 'Green tea', mg: 28, icon: 'sprout' },
+    { id: 'energy', name: 'Energy drink', mg: 160, icon: 'zap' },
+    { id: 'cola', name: 'Cola', mg: 34, icon: 'cup-soda' },
+    { id: 'preworkout', name: 'Pre-workout', mg: 200, icon: 'dumbbell' },
+  ];
+  const BY_ID = Object.fromEntries(DRINKS.map(d => [d.id, d]));
+  const KEY = 'napwindow.v1';
+  const DEFAULTS = {
+    sleepHours: 6, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
+    sleepiness: '4', stress: '3', eventTime: '', needSharp: false,
+    drinks: [{ type: 'coffee', time: '08:00' }],
+  };
+  // What Reset returns to: no drinks, neutral feelings, a full night's sleep
+  const CLEARED = {
+    sleepHours: 8, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
+    sleepiness: '3', stress: '2', eventTime: '', needSharp: false, drinks: [],
+  };
+  const HALF_LIFE_MIN = 300;   // caffeine half-life
+  const ONSET_MIN = 20;        // caffeine takes ~20 min to kick in
+  const FALL_ASLEEP_MIN = 7;
+  const BUFFER_MIN = 10;       // time to wake up properly before the next event
+
+  const $ = s => document.querySelector(s);
+  const ico = name => `<i data-lucide="${name}"></i>`;
+  const drawIcons = () => { try { if (window.lucide) window.lucide.createIcons({ attrs: { 'stroke-width': 2 } }); } catch (e) {} };
+  const toMin = t => { const [h, m] = String(t || '00:00').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  const wrap = m => ((Math.round(m) % 1440) + 1440) % 1440;
+  const toHHMM = m => { m = wrap(m); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  const diff = (a, b) => wrap(b - a); // minutes going forward from a to b
+  const clock = m => { m = wrap(m); const h = Math.floor(m / 60); return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  const dur = m => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; };
+  const liveMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+
+  let state = load();
+
+  function load() {
+    const base = JSON.parse(JSON.stringify(DEFAULTS));
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (s && typeof s === 'object') {
+        Object.assign(base, s);
+        base.drinks = Array.isArray(s.drinks) ? s.drinks.filter(d => d && BY_ID[d.type]) : base.drinks;
+      }
+    } catch (e) {}
+    return base;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function checkRadio(name, value) {
+    const el = document.querySelector(`input[name="${name}"][value="${value}"]`) || document.querySelector(`input[name="${name}"]`);
+    el.checked = true;
+  }
+
+  function stateToForm() {
+    $('#wakeTime').value = state.wakeTime;
+    $('#bedTime').value = state.bedTime;
+    $('#needSharp').checked = !!state.needSharp;
+    checkRadio('sleepiness', state.sleepiness);
+    checkRadio('stress', state.stress);
+    $('#eventTime').value = state.eventTime || '';
+    $('#nowTime').value = toHHMM(liveMin());
+    $('#qadd').innerHTML = DRINKS.map(d => `<button type="button" data-add="${d.id}">${ico(d.icon)}${d.name} <b>${d.mg}mg</b></button>`).join('');
+    renderDrinks();
+  }
+
+  function formToState() {
+    state.wakeTime = $('#wakeTime').value || state.wakeTime;
+    state.bedTime = $('#bedTime').value || state.bedTime;
+    state.needSharp = $('#needSharp').checked;
+    state.sleepiness = document.querySelector('input[name="sleepiness"]:checked').value;
+    state.stress = document.querySelector('input[name="stress"]:checked').value;
+    state.eventTime = $('#eventTime').value;
+  }
+
+  function renderDrinks() {
+    $('#drinkList').innerHTML = state.drinks.map((d, i) => {
+      const k = BY_ID[d.type];
+      return `<li class="dchip">${ico(k.icon)}${k.name}
+        <input type="time" id="drink-time-${i}" data-idx="${i}" value="${d.time}" aria-label="Time of ${k.name}">
+        <button type="button" data-remove="${i}" aria-label="Remove ${k.name}">${ico('x')}</button></li>`;
+    }).join('');
+  }
+
+  // ---- Decision engine ----
+  function evaluate(s, now) {
+    const wake = toMin(s.wakeTime), bed = toMin(s.bedTime);
+    const inSleepWindow = diff(bed, now) < diff(bed, wake);
+    const upMin = diff(wake, now), bedMin = diff(now, bed);
+    const W = upMin / 60, B = bedMin / 60;
+    const debt = Math.max(0, s.sleepNeed - s.sleepHours);
+    const sleepiness = +s.sleepiness, stress = +s.stress;
+    // Free time runs until the next event (minus a wake-up buffer), or until bedtime if nothing's planned
+    const evtAt = s.eventTime ? toMin(s.eventTime) : null;
+    const eventMin = evtAt === null ? null : diff(now, evtAt);
+    const hasEvent = eventMin !== null && eventMin < bedMin && !inSleepWindow;
+    const eventPassed = evtAt !== null && !hasEvent && diff(evtAt, now) <= upMin;
+    const avail = hasEvent ? eventMin - BUFFER_MIN : bedMin;
+
+    let active = 0, recent = 0, atBed = 0;
+    for (const d of s.drinks) {
+      const mg = BY_ID[d.type].mg, ago = diff(toMin(d.time), now);
+      if (ago < ONSET_MIN) recent += mg; else active += mg * Math.pow(0.5, ago / HALF_LIFE_MIN);
+      atBed += mg * Math.pow(0.5, (ago + bedMin) / HALF_LIFE_MIN);
+    }
+
+    const factors = [];
+    factors.push(debt <= 0
+      ? { label: 'Sleep', icon: 'bed-double', pts: -8, note: `${dur(s.sleepHours * 60)}, no sleep debt` }
+      : { label: 'Sleep', icon: 'bed-double', pts: Math.round(Math.min(debt, 4) * 11), note: `${dur(debt * 60)} short of your ${dur(s.sleepNeed * 60)}` });
+
+    const dipStart = wake + 360, dipEnd = wake + 540;
+    if (W < 3) {
+      factors.push({ label: 'Body clock', icon: 'sun', pts: -12, note: `Up only ${dur(upMin)}, sleep pressure is low` });
+    } else {
+      const dip = Math.round(22 * Math.exp(-((W - 7.5) ** 2) / (2 * 1.3 ** 2)));
+      const note = W >= 6 && W <= 9 ? `In your afternoon dip (${clock(dipStart)}–${clock(dipEnd)})`
+        : W < 6 ? `Dip starts around ${clock(dipStart)}`
+        : 'Afternoon dip has passed';
+      factors.push({ label: 'Body clock', icon: 'sun', pts: dip, note });
+    }
+
+    const bedPts = B < 4 ? -45 : B < 6 ? -25 : B < 7 ? -12 : B < 8 ? -4 : 0;
+    factors.push({ label: 'Bedtime', icon: 'moon', pts: bedPts, note: bedPts ? `${dur(bedMin)} away, a nap may delay sleep` : `${dur(bedMin)} away, plenty of buffer` });
+
+    const sleepyNotes = ['', 'Feeling alert', 'Feeling fine', 'A bit tired', 'Drowsy', 'Nodding off'];
+    factors.push({ label: 'Sleepiness', icon: 'eye', pts: (sleepiness - 3) * 10, note: sleepyNotes[sleepiness] });
+
+    const caffPts = active >= 200 ? -18 : active >= 120 ? -10 : active >= 60 ? -4 : 0;
+    let caffNote = s.drinks.length ? `~${Math.round(active)} mg active` : 'None today';
+    if (recent) caffNote += `, ${Math.round(recent)} mg kicking in soon`;
+    factors.push({ label: 'Caffeine', icon: 'coffee', pts: caffPts, note: caffNote });
+
+    const stressPts = [0, 0, 0, -2, -6, -10][stress];
+    const stressNotes = ['', 'Calm', 'Low', 'Manageable', 'May keep you from dozing off', 'Hard to fall asleep when wired'];
+    factors.push({ label: 'Stress', icon: 'heart-pulse', pts: stressPts, note: stressNotes[stress] });
+
+    const total = factors.reduce((a, f) => a + f.pts, 0);
+
+    let kind;
+    if (inSleepWindow) kind = 'bed';
+    else if (B < 3) kind = 'skip';
+    else if (total >= 25) kind = 'nap';
+    else if (total >= 8) kind = 'short';
+    else kind = 'skip';
+    if (kind === 'nap' && B < 7) kind = 'short'; // within ~7h of bed, only a brief nap
+
+    // Fit the nap into the free time, in 5-minute steps
+    const fit = Math.floor((avail - FALL_ASLEEP_MIN) / 5) * 5;
+    let eventTooSoon = false;
+    if (kind === 'nap' || kind === 'short') {
+      if (avail < 5) { kind = 'skip'; eventTooSoon = true; }
+      else if (fit < 10) kind = 'rest';
+    }
+    let len = 0;
+    if (kind === 'nap') {
+      len = (fit >= 90 && debt >= 1.5 && B >= 8.5 && !s.needSharp) ? 90 : 20;
+      if (len > fit) { len = fit; kind = 'short'; }
+    }
+    if (kind === 'short') len = Math.min(len || (B < 7 ? 10 : 15), fit);
+    if (kind === 'rest') len = Math.max(5, Math.min(10, Math.floor(avail)));
+    const alarm = now + (kind === 'rest' ? 0 : FALL_ASLEEP_MIN) + len;
+
+    return { kind, total, factors, len, alarm, now, wake, bed, bedMin, upMin, debt, active, recent, atBed, stress, inSleepWindow, avail, needSharp: s.needSharp, hasEvent, eventMin, evtAt, eventPassed, eventTooSoon };
+  }
+
+  // ---- Rendering ----
+  const PILL = { nap: 'Nap', short: 'Short nap', rest: 'Rest', skip: 'Skip', bed: 'Sleep time' };
+  const TITLE = { nap: 'Take a nap', short: 'A short nap is fine', rest: "Rest, don't sleep", skip: 'Skip the nap', bed: 'Go to bed instead' };
+  const VICON = { nap: 'bed-double', short: 'timer', rest: 'eye-off', skip: 'sun', bed: 'moon-star' };
+
+  function copy(r) {
+    const earlier = Math.min(60, Math.max(15, Math.round(r.debt * 20 / 15) * 15));
+    const debtLabel = r.debt > 0 ? dur(r.debt * 60) : 'None';
+    let sub, stats, tipsTitle;
+    const tips = [];
+    const tip = (icon, text) => tips.push([icon, text]);
+    const lastStat = r.hasEvent ? ['calendar-clock', 'Event in', dur(r.eventMin)] : ['moon', 'Bed in', dur(r.bedMin)];
+    switch (r.kind) {
+      case 'nap':
+        sub = r.len === 90
+          ? "You have time for one full 90-minute sleep cycle, which pays back some of last night's debt."
+          : 'A 20-minute power nap clears the fog without leaving you groggy.';
+        break;
+      case 'short':
+        sub = `Keep it to ${r.len} minutes so it won't cut into tonight's sleep.`;
+        break;
+      case 'rest':
+        sub = `Not enough time to fall asleep and wake cleanly. Close your eyes for ${r.len} minutes.`;
+        break;
+      case 'skip':
+        sub = r.eventTooSoon
+          ? `Your next event starts at ${clock(r.evtAt)}, too soon to rest. Try a nap after it.`
+          : r.bedMin < 180
+          ? 'Bedtime is too close. Go to bed a little early instead.'
+          : "A nap now is more likely to hurt tonight's sleep than help today.";
+        break;
+      case 'bed':
+        sub = `You're inside your usual sleep hours (${clock(r.bed)} to ${clock(r.wake)}).`;
+        break;
+    }
+    if (r.kind === 'nap' || r.kind === 'short') {
+      stats = [['bed-double', 'Nap', `${r.len} min`], ['alarm-clock', 'Alarm', clock(r.alarm)], lastStat];
+      tipsTitle = 'Before you lie down';
+      tip('alarm-clock', `Set an alarm for ${clock(r.alarm)} (includes ~7 min to fall asleep).`);
+      if (r.hasEvent) tip('calendar-check', `You'll be up ${dur(r.eventMin - FALL_ASLEEP_MIN - r.len)} before your ${clock(r.evtAt)} event.`);
+      if (r.recent && r.len <= 20) tip('coffee', 'Good timing: the caffeine you just had kicks in as you wake.');
+      else if (r.len <= 20 && r.active < 120 && r.bedMin >= 540) tip('coffee', 'Coffee nap: drink a coffee right before lying down.');
+      if (r.len < 90) tip('sunrise', 'Get up when the alarm goes. Past 30 minutes you wake groggy.');
+      else tip('sun', 'Expect a few groggy minutes. Bright light helps.');
+      if (r.stress >= 4) tip('wind', 'Mind racing? Breathe 4 seconds in, 6 out. Quiet rest still helps.');
+    } else if (r.kind === 'rest') {
+      stats = [['eye-off', 'Rest', `${r.len} min`], ['alarm-clock', 'Back at', clock(r.alarm)], lastStat];
+      tipsTitle = 'How to rest';
+      tip('timer', `Set a ${r.len}-minute timer, close your eyes and let your thoughts drift.`);
+      if (r.stress >= 4) tip('wind', 'Use the time for slow breathing: 4 seconds in, 6 out.');
+      tip('refresh-cw', 'Free up 25 minutes later? Check again for a proper nap.');
+    } else if (r.kind === 'skip') {
+      stats = [['battery-low', 'Sleep debt', debtLabel], ['coffee', 'Caffeine', `${Math.round(r.active + r.recent)} mg`], lastStat];
+      tipsTitle = 'Try instead';
+      tip('footprints', 'Get 10 minutes of daylight or take a brisk walk.');
+      if (r.debt >= 0.75) tip('moon', `Go to bed around ${clock(r.bed - earlier)} tonight, ${earlier} minutes early.`);
+      if (r.stress >= 4) tip('wind', 'Try 5 minutes of slow breathing: 4 seconds in, 6 out.');
+      if (r.active < 80 && r.bedMin >= 540) tip('coffee', 'A small coffee or tea is fine, bedtime is 9+ hours away.');
+    } else {
+      stats = [['sunrise', 'Wake at', clock(r.wake)], ['hourglass', 'Sleep left', dur(diff(r.now, r.wake))], ['battery-low', 'Sleep debt', debtLabel]];
+      tipsTitle = 'Tonight';
+      tip('lamp', 'Keep the lights dim and put screens away.');
+      tip('armchair', "Can't fall asleep in ~20 minutes? Get up and do something calm until sleepy.");
+      if (r.atBed >= 50) tip('coffee', `~${Math.round(r.atBed)} mg of caffeine is still in your system.`);
+    }
+    return { sub, stats, tipsTitle, tips };
+  }
+
+  function pt(m, r) {
+    const a = (m / 1440 * 360 + 90) * Math.PI / 180; // midnight at bottom, noon at top
+    return [120 + r * Math.cos(a), 120 + r * Math.sin(a)];
+  }
+  function arc(m1, m2, r) {
+    let span = diff(m1, m2);
+    if (span === 0) return '';
+    if (span >= 1439) span = 1439.5;
+    const [x1, y1] = pt(m1, r), [x2, y2] = pt(m1 + span, r);
+    return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${span > 720 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  }
+
+  function renderDial(r) {
+    const R = 100, W = 15;
+    const path = (d, cls, w = W) => d ? `<path d="${d}" class="${cls}" fill="none" stroke-width="${w}" stroke-linecap="butt"/>` : '';
+    let ticks = '';
+    for (let h = 0; h < 24; h++) {
+      const [x1, y1] = pt(h * 60, 86), [x2, y2] = pt(h * 60, h % 6 === 0 ? 79 : 83);
+      ticks += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="d-tick" stroke-width="1.2"/>`;
+    }
+    const lbls = [[0, '12a'], [360, '6a'], [720, '12p'], [1080, '6p']].map(([m, t]) => {
+      const [x, y] = pt(m, 68);
+      return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle" class="d-lbl">${t}</text>`;
+    }).join('');
+    const napArc = (r.kind === 'nap' || r.kind === 'short' || r.kind === 'rest')
+      ? path(arc(r.now, r.alarm, R), 'd-nap', 8) : '';
+    const [nx, ny] = pt(r.now, R);
+    const evt = r.hasEvent ? pt(r.evtAt, R) : null;
+    const evtMark = evt ? `<rect x="${(evt[0] - 6).toFixed(2)}" y="${(evt[1] - 6).toFixed(2)}" width="12" height="12" rx="2.5" class="d-evt" transform="rotate(45 ${evt[0].toFixed(2)} ${evt[1].toFixed(2)})"/>` : '';
+    const [hh, ap] = clock(r.now).split(' ');
+    const sub = r.inSleepWindow ? `wake ${clock(r.wake)}` : `bed in ${dur(r.bedMin)}`;
+    $('#dial').innerHTML = `
+      <circle cx="120" cy="120" r="${R}" class="d-track" fill="none" stroke-width="${W}"/>
+      ${path(arc(r.bed - 420, r.bed, R), 'd-late')}
+      ${path(arc(r.wake + 360, r.wake + 540, R), 'd-dip')}
+      ${path(arc(r.bed, r.wake, R), 'd-sleep')}
+      ${napArc}
+      ${ticks}${lbls}
+      <text x="120" y="123" text-anchor="middle" class="d-time">${hh}<tspan font-size="13" dx="3">${ap}</tspan></text>
+      <text x="120" y="143" text-anchor="middle" class="d-sub">${sub}</text>
+      ${evtMark}
+      <circle cx="${nx.toFixed(2)}" cy="${ny.toFixed(2)}" r="8" class="d-now"/>`;
+    $('#legNap').hidden = !napArc;
+    $('#legEvt').hidden = !evt;
+  }
+
+  function render(r) {
+    const c = copy(r);
+    $('#card').dataset.kind = r.kind;
+    $('#mbar').dataset.kind = r.kind;
+    $('#vBadge').innerHTML = $('#mIcon').innerHTML = ico(VICON[r.kind]);
+    $('#vPill').textContent = PILL[r.kind];
+    $('#vTitle').textContent = TITLE[r.kind];
+    $('#vSub').textContent = c.sub;
+    const short = (r.kind === 'nap' || r.kind === 'short') ? `${r.len} min · alarm ${clock(r.alarm)}` : c.sub;
+    $('#mText').innerHTML = `${TITLE[r.kind]}<small>${short}</small>`;
+    $('#plan').innerHTML = c.stats.map(([i, k, v]) => `<div class="stat"><span class="sl">${ico(i)}${k}</span><b>${v}</b></div>`).join('');
+    renderDial(r);
+
+    const clamped = Math.max(-60, Math.min(60, r.total));
+    $('#meterDot').style.left = ((clamped + 60) / 120 * 100) + '%';
+    $('#scoreVal').textContent = (r.total > 0 ? '+' : '') + r.total;
+
+    $('#factors').innerHTML = r.factors.map(f => {
+      const cls = f.pts > 0 ? 'pos' : f.pts < 0 ? 'neg' : 'zero';
+      const w = Math.min(50, Math.abs(f.pts) / 45 * 50);
+      return `<li class="factor">
+        <span class="f-ic ${cls}">${ico(f.icon)}</span>
+        <div class="f-text"><b>${f.label}</b><span>${f.note}</span></div>
+        <div class="f-bar" aria-hidden="true">${f.pts ? `<span class="f-fill ${cls}" style="width:${w}%"></span>` : ''}</div>
+        <span class="f-val ${cls}">${f.pts > 0 ? '+' : ''}${f.pts}</span>
+      </li>`;
+    }).join('');
+    $('#tipsTitle').textContent = c.tipsTitle;
+    $('#tips').innerHTML = c.tips.map(([i, t]) => `<li><span class="t-ic">${ico(i)}</span><span>${t}</span></li>`).join('');
+
+    $('#caffSum').innerHTML = state.drinks.length
+      ? `${ico('activity')}≈ ${Math.round(r.active + r.recent)} mg in you now · ≈ ${Math.round(r.atBed)} mg at bedtime`
+      : `${ico('info')}No caffeine logged today`;
+
+    $('#gapInfo').innerHTML = r.inSleepWindow
+      ? `${ico('moon')}<span>You're inside your usual sleep hours.</span>`
+      : r.hasEvent
+        ? `${ico('hourglass')}<span><b>${dur(r.eventMin)}</b> until your ${clock(r.evtAt)} event, so <b>${dur(Math.max(0, r.avail))}</b> free after a 10-min buffer</span>`
+        : r.eventPassed
+          ? `${ico('calendar-x')}<span>That time has already passed today. Enter your next event, or tap Nothing planned.</span>`
+          : state.eventTime
+            ? `${ico('calendar-check')}<span>That's after your bedtime, so you're free until bed (<b>${dur(r.bedMin)}</b>).</span>`
+            : `${ico('calendar-check')}<span>Nothing planned. You're free until bedtime (<b>${dur(r.bedMin)}</b>).</span>`;
+    drawIcons();
+  }
+
+  function update() {
+    formToState();
+    $('#sleepHoursOut').textContent = dur(state.sleepHours * 60);
+    $('#sleepNeedOut').textContent = dur(state.sleepNeed * 60);
+    render(evaluate(state, toMin($('#nowTime').value || toHHMM(liveMin()))));
+    save();
+  }
+
+  // ---- Events ----
+  const form = $('#form');
+  form.addEventListener('submit', e => e.preventDefault());
+  form.addEventListener('input', e => {
+    const t = e.target;
+    if (t.id === 'nowTime') $('#liveNow').checked = false;
+    if (t.id === 'liveNow' && t.checked) $('#nowTime').value = toHHMM(liveMin());
+    if (t.dataset.idx !== undefined && t.value) {
+      const d = state.drinks[+t.dataset.idx];
+      if (d) d.time = t.value;
+    }
+    update();
+  });
+  form.addEventListener('click', e => {
+    const stepBtn = e.target.closest('[data-d]');
+    if (stepBtn) {
+      const box = stepBtn.closest('.step'), f = box.dataset.field;
+      const next = state[f] + (+stepBtn.dataset.d) * (+box.dataset.step);
+      state[f] = Math.min(+box.dataset.max, Math.max(+box.dataset.min, next));
+      update();
+      return;
+    }
+    const quick = e.target.closest('[data-in]');
+    if (quick) {
+      const base = toMin($('#nowTime').value || toHHMM(liveMin()));
+      $('#eventTime').value = quick.dataset.in === 'none' ? '' : toHHMM(base + +quick.dataset.in);
+      update();
+      return;
+    }
+    const add = e.target.closest('[data-add]');
+    if (add) {
+      state.drinks.push({ type: add.dataset.add, time: $('#nowTime').value || toHHMM(liveMin()) });
+      renderDrinks();
+      update();
+      return;
+    }
+    const rm = e.target.closest('[data-remove]');
+    if (rm) {
+      state.drinks.splice(+rm.dataset.remove, 1);
+      renderDrinks();
+      update();
+    }
+  });
+  $('#resetBtn').addEventListener('click', () => {
+    state = JSON.parse(JSON.stringify(CLEARED));
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    $('#liveNow').checked = true;
+    stateToForm();
+    update();
+  });
+  $('#mSee').addEventListener('click', () => $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+
+  setInterval(() => {
+    renderQuote();
+    if ($('#liveNow').checked) {
+      const t = toHHMM(liveMin());
+      if ($('#nowTime').value !== t) { $('#nowTime').value = t; update(); }
+    }
+  }, 15000);
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => { $('#mbar').hidden = entry.isIntersecting; }, { threshold: 0.2 }).observe($('#card'));
+  }
+
+  // ---- Quote of the day (from AZQuotes' sleep and naps pages) ----
+  const QUOTES = [
+    ["O sleep! O gentle sleep! Nature's soft nurse.", 'William Shakespeare'],
+    ['Sleep is the best meditation.', 'Dalai Lama'],
+    ['Silence is the sleep that nourishes wisdom.', 'Francis Bacon'],
+    ['Laugh and the world laughs with you, snore and you sleep alone.', 'Anthony Burgess'],
+    ['There is a time for many words, and there is also a time for sleep.', 'Homer'],
+    ['Early to bed and early to rise makes a man healthy, wealthy and wise.', 'Benjamin Franklin'],
+    ['Sleep is a hint of lovely oblivion.', 'D. H. Lawrence'],
+    ['Go to sleep in peace. God is awake.', 'Victor Hugo'],
+    ['Sleep is like the unicorn - it is rumored to exist, but I doubt I will see any.', 'Dr. Seuss'],
+    ['Sleep is the most blessed and blessing of all natural graces.', 'Aldous Huxley'],
+    ['A ruffled mind makes a restless pillow.', 'Charlotte Brontë'],
+    ["Six hours' sleep for a man, seven for a woman, and eight for a fool.", 'Napoleon Bonaparte'],
+    ["The best eraser in the world is a good night's sleep.", 'Orlando Aloysius Battista'],
+    ['A well-spent day brings happy sleep.', 'Leonardo da Vinci'],
+    ["A night of sleep is as much preparation for the subsequent day's activity as it is recovery from that of the previous day.", 'J. Allan Hobson'],
+    ['Sleep is the gateway to those nightly visitations of the irrational.', 'Gayle Greene'],
+    ['Sleep is pain\'s easiest salve, and doth fulfil all offices of death, except to kill.', 'John Donne'],
+    ['A little insomnia is not without its value in making us appreciate sleep, in throwing a ray of light upon that darkness.', 'Marcel Proust'],
+    ['I count it as a certainty that in paradise, everyone naps.', 'Tom Hodgkinson'],
+    ['True silence is the rest of the mind, and is to the spirit what sleep is to the body, nourishment and refreshment.', 'William Penn'],
+    ['All life is a nap. The more naps you take the better.', 'Ralph Waldo Emerson'],
+    ['The more naps you take, the more awakenings you experience.', 'Sarah Ban Breathnach'],
+    ['No day is so bad that it can not be fixed by a good nap.', 'Carrie Snow'],
+    ["When you can't figure out what to do, it's time for a nap.", 'Mason Cooley'],
+    ['Naps are a way of traveling painlessly through time into the future.', 'Thomas Carlyle'],
+    ['Figure out what to do, then take a nap.', 'Adam Carolla'],
+    ['There is always time for a nap.', 'Suzy Becker'],
+    ["I'm a morning person and a night person. So I have to be a nap person, or else I'm a tired person.", 'Jeri Smith-Ready'],
+    ["I don't feel old. I don't feel anything till noon. That's when it's time for my nap.", 'Bob Hope'],
+    ['I usually take a two-hour nap from one to four.', 'Yogi Berra'],
+    ['Persevere. Plan. Strategize. Focus. Breathe. Write. Let go: relax. Forgive. All this failing: take a nap.', 'Mary Anne Radmacher'],
+    ['There are two ways to get rid of an anxiety monster, my friend - you either have a bath or a nap.', 'Andrew Kaufman'],
+    ['Mornings belong to whatever is new; the current composition. Afternoons are for naps and letters.', 'Stephen King'],
+    ["I eat really healthy, and if I'm tired, I take a nap.", 'Casper Van Dien'],
+    ['Consciousness: that annoying time between naps.', 'Steven Wright'],
+    ['I am a great believer in naps, whatever age you are.', 'Shirley Eaton'],
+    // Relaxation
+    ['Your mind will answer most questions if you learn to relax and wait for the answer.', 'William S. Burroughs'],
+    ['Sometimes the most urgent and vital thing you can possibly do is take a complete rest.', 'Ashleigh Brilliant'],
+    ["The time to relax is when you don't have time for it.", 'Sydney J. Harris'],
+    ['Smile, breathe and go slowly.', 'Thich Nhat Hanh'],
+    ["Relaxation means releasing all concern and tension and letting the natural order of life flow through one's being.", 'Donald Curtis'],
+    ['Every now and then go away, have a little relaxation, for when you come back to your work your judgment will be surer.', 'Leonardo da Vinci'],
+    ['For fast-acting relief try slowing down.', 'Lily Tomlin'],
+    ['Take charge of your schedule. Make time for reflection and relaxation.', 'Mihaly Csikszentmihalyi'],
+    ['Sometimes I sits and thinks, and sometimes I just sits.', 'A. A. Milne'],
+    ["It's a good idea always to do something relaxing prior to making an important decision in your life.", 'Paulo Coelho'],
+    ['To sit in the shade on a fine day and look upon verdure is the most perfect refreshment.', 'Jane Austen'],
+    ['The greatest weapon against stress is our ability to choose one thought over another.', 'William James'],
+    ['Learning to ignore things is one of the great paths to inner peace.', 'Robert J. Sawyer'],
+    ['Nothing is permanent in this wicked world - not even our troubles.', 'Charlie Chaplin'],
+    ['When we are unable to find tranquility within ourselves, it is useless to seek it elsewhere.', 'François de La Rochefoucauld'],
+    ['If you can attain repose and calm, believe that you have seized happiness.', 'Julie de Lespinasse'],
+    ["What's the use of worrying? It never was worthwhile.", 'George Henry Powell'],
+    ['Vacation: a period of travel and relaxation when you take twice the clothes and half the money you need.', 'Jerry Smith'],
+    ['Whenever in doubt, turn off your mind, relax, and float downstream.', 'John Lennon'],
+    ['Each person deserves a day away in which no problems are confronted, no solutions searched for.', 'Maya Angelou'],
+    ['Learn to relax. Your body is precious, as it houses your mind and spirit. Inner peace begins with a relaxed body.', 'Norman Vincent Peale'],
+    ["Relax, you're on a journey of discovery. Let life reveal itself to you.", 'Melody Beattie'],
+    ["Don't seek, don't search, don't ask, don't knock, don't demand - relax.", 'Rajneesh'],
+    ['There is more to life than increasing its speed.', 'Mahatma Gandhi'],
+    ['Relax into the present moment.', 'Gary Zukav'],
+    ["You can't make a life without making mistakes. Relax and learn something.", 'Rick Warren'],
+    ['There is virtue in work and there is virtue in rest. Use both and overlook neither.', 'Alan Cohen'],
+    ['The hurrier I go, the behinder I get.', 'Lewis Carroll'],
+    ['Take rest; a field that has rested gives a bountiful crop.', 'Ovid'],
+    ['Try to relax and enjoy the crisis.', 'Ashleigh Brilliant'],
+    // More on sleep
+    ['Man should forget his anger before he lies down to sleep.', 'Mahatma Gandhi'],
+    ['Oh sleep! it is a gentle thing, beloved from pole to pole.', 'Samuel Taylor Coleridge'],
+    ['To sleep, perchance to dream.', 'William Shakespeare'],
+    ['The last refuge of the insomniac is a sense of superiority to the sleeping world.', 'Leonard Cohen'],
+    ['I have never taken any exercise except sleeping and resting.', 'Mark Twain'],
+    ['One cannot think well, love well, sleep well, if one has not dined well.', 'Virginia Woolf'],
+    ['Men who are unhappy, like men who sleep badly, are always proud of the fact.', 'Bertrand Russell'],
+    ["A dream is a wish your heart makes, when you're fast asleep.", 'Walt Disney'],
+    ['Think in the morning. Act in the noon. Eat in the evening. Sleep in the night.', 'William Blake'],
+    ['Now I see the secret of making the best person: it is to grow in the open air and to eat and sleep with the earth.', 'Walt Whitman'],
+    ['Fatigue is the best pillow.', 'Benjamin Franklin'],
+    ['Sleep is God. Go worship.', 'Jim Butcher'],
+  ];
+  // A shuffled order fixed by a seed; day N shows the Nth quote, so nothing repeats until the list runs out
+  const QUOTE_EPOCH = Date.UTC(2026, 9, 22);
+  const QUOTE_ORDER = (() => {
+    const order = QUOTES.map((_, i) => i);
+    let seed = 20261022;
+    const rand = () => ((seed = (seed * 1103515245 + 12345) % 2147483648) / 2147483648);
+    for (let i = order.length - 1; i > 0; i--) { const j = Math.floor(rand() * (i + 1)); [order[i], order[j]] = [order[j], order[i]]; }
+    return order;
+  })();
+  let quoteDay = null;
+  function renderQuote() {
+    const d = new Date();
+    const day = Math.floor((Date.UTC(d.getFullYear(), d.getMonth(), d.getDate()) - QUOTE_EPOCH) / 86400000);
+    if (day === quoteDay) return;
+    quoteDay = day;
+    const n = QUOTES.length;
+    const [text, who] = QUOTES[QUOTE_ORDER[((day % n) + n) % n]];
+    $('#qText').textContent = text;
+    $('#qWho').textContent = who;
+    $('#qDate').textContent = d.toLocaleDateString(undefined, { weekday: 'long', month: 'long', day: 'numeric' });
+  }
+  renderQuote();
+
+  stateToForm();
+  update();
+})();
+</script>
