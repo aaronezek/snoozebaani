@@ -1,0 +1,727 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<title>Snoozebaani</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:wght@400;700&family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700&family=JetBrains+Mono:wght@400;600&display=swap">
+<style>
+/* Layout: one compact input panel of label/control rows beside a live verdict card; stacks on phones with a verdict bar pinned to the bottom */
+:root {
+  --bg: #EDEFF6;
+  --surface: #FFFFFF;
+  --ink: #191C33;
+  --muted: #5B6080;
+  --line: #DFE1EC;
+  --track: #E6E8F1;
+  --accent: #3D45B8;
+  --accent-ink: #FFFFFF;
+  --sun: #D98E1C;
+  --night: #2A2F63;
+  --good: #1F7F5B;
+  --warn: #A86F08;
+  --bad: #BA3E36;
+  --f-display: "Bricolage Grotesque", "Segoe UI", system-ui, sans-serif;
+  --f-body: "Atkinson Hyperlegible", "Segoe UI", system-ui, sans-serif;
+  --f-mono: "JetBrains Mono", ui-monospace, Consolas, monospace;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0E1120; --surface: #161A2E; --ink: #E6E8F4; --muted: #989DBD; --line: #272C47; --track: #222741;
+    --accent: #8D94FF; --accent-ink: #0E1120; --sun: #F0B254; --night: #626AD6;
+    --good: #4CC496; --warn: #E6B04A; --bad: #F07068;
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0E1120; --surface: #161A2E; --ink: #E6E8F4; --muted: #989DBD; --line: #272C47; --track: #222741;
+  --accent: #8D94FF; --accent-ink: #0E1120; --sun: #F0B254; --night: #626AD6;
+  --good: #4CC496; --warn: #E6B04A; --bad: #F07068;
+  color-scheme: dark;
+}
+
+body { margin: 0; background: var(--bg); color: var(--ink); font-family: var(--f-body); font-size: 15px; line-height: 1.45; }
+*, *::before, *::after { box-sizing: border-box; }
+.wrap {
+  max-width: 1080px; margin: 0 auto;
+  padding-left: max(16px, env(safe-area-inset-left, 0px));
+  padding-right: max(16px, env(safe-area-inset-right, 0px));
+  padding-block: 18px 28px;
+}
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+button { font: inherit; color: inherit; }
+[hidden] { display: none !important; }
+
+/* Header */
+.top { display: flex; align-items: baseline; gap: 14px; flex-wrap: wrap; margin-bottom: 14px; }
+.brand { display: flex; align-items: center; gap: 7px; font-family: var(--f-display); font-weight: 700; font-size: 1.35rem; letter-spacing: -.01em; color: var(--accent); margin: 0; }
+.brand svg { width: 20px; height: 20px; align-self: center; }
+.tag { color: var(--muted); margin: 0; font-size: .95rem; }
+.reset { margin-left: auto; align-self: center; display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); color: var(--muted); font-size: .84rem; font-weight: 700; cursor: pointer; }
+.reset:hover { color: var(--bad); border-color: var(--bad); }
+.reset svg { width: 14px; height: 14px; }
+
+.grid { display: grid; grid-template-columns: minmax(0, 1fr) minmax(0, 400px); gap: 20px; align-items: start; }
+
+/* Input panel */
+.panel { background: var(--surface); border: 1px solid var(--line); border-radius: 16px; padding: 4px 18px; min-width: 0; }
+.row { display: grid; grid-template-columns: 84px minmax(0, 1fr); gap: 12px; align-items: center; padding-block: 11px; border-top: 1px solid var(--line); min-width: 0; }
+.row:first-child { border-top: 0; }
+.rl { font-weight: 700; font-size: .9rem; }
+.ctrl { display: flex; flex-wrap: wrap; gap: 8px 14px; align-items: center; min-width: 0; }
+.ctrl.col { flex-direction: column; align-items: stretch; gap: 8px; }
+.pair { display: inline-flex; align-items: center; gap: 7px; }
+.mini { font-size: .8rem; color: var(--muted); }
+
+.step { display: inline-flex; align-items: center; border: 1px solid var(--line); border-radius: 10px; overflow: hidden; background: var(--surface); }
+.step button { width: 38px; height: 38px; border: 0; background: var(--track); cursor: pointer; font-size: 1.1rem; font-weight: 700; color: var(--ink); }
+.step button:hover { background: color-mix(in srgb, var(--accent) 18%, var(--track)); }
+.step output { min-width: 62px; text-align: center; font-family: var(--f-mono); font-weight: 600; font-size: .92rem; font-variant-numeric: tabular-nums; }
+
+input[type="time"] {
+  font-family: var(--f-mono); font-size: .9rem; color: var(--ink);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 10px;
+  padding: 0 8px; min-height: 38px; box-sizing: border-box; min-width: 0;
+}
+
+.seg { flex: 1; display: grid; grid-template-columns: repeat(5, minmax(0, 1fr)); gap: 3px; padding: 3px; background: var(--track); border-radius: 11px; min-width: 0; }
+.seg.four { grid-template-columns: repeat(4, minmax(0, 1fr)); }
+.seg input { position: absolute; opacity: 0; pointer-events: none; }
+.seg label { display: grid; place-items: center; text-align: center; padding: 6px 2px; min-height: 34px; box-sizing: border-box; border-radius: 8px; font-size: .8rem; line-height: 1.15; color: var(--muted); cursor: pointer; transition: background .12s, color .12s; }
+.seg label:hover { color: var(--ink); }
+.seg input:checked + label { background: var(--surface); color: var(--ink); font-weight: 700; box-shadow: 0 1px 2px rgb(0 0 0 / .14); }
+.seg input:focus-visible + label { outline: 2px solid var(--accent); outline-offset: 1px; }
+
+.tog { position: relative; display: inline-flex; cursor: pointer; }
+.tog input { position: absolute; opacity: 0; pointer-events: none; }
+.tog span { display: inline-flex; align-items: center; gap: 6px; min-height: 34px; padding: 0 12px; border: 1px solid var(--line); border-radius: 99px; font-size: .84rem; color: var(--muted); transition: background .12s, color .12s; }
+.tog span::before { content: ""; width: 8px; height: 8px; border-radius: 50%; border: 1.5px solid currentColor; box-sizing: border-box; }
+.tog input:checked + span { background: color-mix(in srgb, var(--accent) 14%, transparent); border-color: var(--accent); color: var(--accent); font-weight: 700; }
+.tog input:checked + span::before { background: currentColor; }
+.tog input:focus-visible + span { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+.qadd { display: flex; flex-wrap: wrap; gap: 6px; }
+.qadd button { min-height: 32px; padding: 0 11px; border: 1px dashed var(--line); border-radius: 99px; background: transparent; font-size: .82rem; color: var(--ink); cursor: pointer; white-space: nowrap; }
+.qadd button:hover { border-style: solid; border-color: var(--accent); color: var(--accent); }
+.qadd b { font-family: var(--f-mono); font-weight: 400; color: var(--muted); font-size: .74rem; }
+.dlist { list-style: none; margin: 0; padding: 0; display: flex; flex-wrap: wrap; gap: 6px; }
+.dlist:empty { display: none; }
+.dchip { display: inline-flex; align-items: center; gap: 2px; background: color-mix(in srgb, var(--accent) 13%, transparent); border-radius: 99px; padding: 1px 2px 1px 11px; font-size: .82rem; font-weight: 700; }
+.dchip input[type="time"] { border: 0; background: transparent; min-height: 30px; padding: 0 2px; font-size: .78rem; color: var(--ink); }
+.dchip button { width: 26px; height: 26px; border: 0; border-radius: 50%; background: transparent; color: var(--muted); cursor: pointer; display: grid; place-items: center; }
+.dchip button:hover { background: var(--surface); color: var(--bad); }
+.dchip svg { width: 11px; height: 11px; }
+.caff-sum { font-family: var(--f-mono); font-size: .76rem; color: var(--muted); margin: 0; }
+
+/* Result card */
+.result { position: sticky; top: calc(env(safe-area-inset-top, 0px) + 14px); min-width: 0; }
+.card {
+  --k: var(--accent);
+  background: var(--surface); border: 1px solid var(--line); border-radius: 16px;
+  padding: 18px; display: grid; gap: 14px; min-width: 0;
+  box-shadow: 0 14px 34px -22px rgb(20 24 70 / .45);
+  border-top: 4px solid var(--k);
+}
+[data-kind="nap"] { --k: var(--good); }
+[data-kind="short"] { --k: var(--accent); }
+[data-kind="rest"] { --k: var(--warn); }
+[data-kind="skip"] { --k: var(--bad); }
+[data-kind="bed"] { --k: var(--night); }
+
+.verdict { display: grid; gap: 4px; }
+.pill { justify-self: start; font-family: var(--f-mono); font-size: .68rem; letter-spacing: .08em; text-transform: uppercase; font-weight: 600; padding: 4px 9px; border-radius: 99px; background: color-mix(in srgb, var(--k) 15%, transparent); color: var(--k); white-space: nowrap; }
+.v-title { font-family: var(--f-display); font-size: 1.75rem; font-weight: 700; line-height: 1.05; letter-spacing: -.02em; margin: 2px 0 0; text-wrap: balance; }
+.v-sub { margin: 0; color: var(--muted); font-size: .9rem; }
+
+.plan { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 1px; background: var(--line); border: 1px solid var(--line); border-radius: 11px; overflow: hidden; }
+.stat { background: var(--surface); padding: 8px 10px; display: grid; gap: 1px; min-width: 0; }
+.stat span { font-size: .66rem; text-transform: uppercase; letter-spacing: .07em; color: var(--muted); }
+.stat b { font-family: var(--f-mono); font-size: .98rem; font-weight: 600; font-variant-numeric: tabular-nums; }
+.stat:first-child b { color: var(--k); }
+
+.dialwrap { display: grid; grid-template-columns: 132px minmax(0, 1fr); gap: 14px; align-items: center; }
+.dial { width: 100%; height: auto; display: block; }
+.d-track { stroke: var(--track); }
+.d-sleep { stroke: var(--night); }
+.d-dip { stroke: color-mix(in srgb, var(--sun) 75%, transparent); }
+.d-late { stroke: color-mix(in srgb, var(--bad) 32%, transparent); }
+.d-nap { stroke: var(--k); }
+.d-tick { stroke: var(--muted); opacity: .45; }
+.d-lbl { fill: var(--muted); font-family: var(--f-mono); font-size: 10px; }
+.d-time { fill: var(--ink); font-family: var(--f-display); font-size: 27px; font-weight: 700; }
+.d-sub { fill: var(--muted); font-family: var(--f-body); font-size: 12px; }
+.d-now { fill: var(--surface); stroke: var(--ink); stroke-width: 2.5; }
+.legend { list-style: none; margin: 0; padding: 0; display: grid; gap: 5px; font-size: .8rem; }
+.legend li { display: flex; gap: 8px; align-items: center; }
+.sw { width: 14px; height: 6px; border-radius: 99px; flex: none; }
+.sw.sleep { background: var(--night); }
+.sw.dip { background: color-mix(in srgb, var(--sun) 75%, transparent); }
+.sw.late { background: color-mix(in srgb, var(--bad) 32%, transparent); }
+.sw.nap { background: var(--k); }
+.sw.now { width: 10px; height: 10px; background: var(--surface); border: 2.5px solid var(--ink); box-sizing: border-box; }
+
+.sec { display: grid; gap: 6px; }
+.sec-head { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; }
+.sec h3 { font-family: var(--f-display); font-size: .95rem; font-weight: 700; margin: 0; }
+.val { font-family: var(--f-mono); font-size: .85rem; font-variant-numeric: tabular-nums; }
+.meter-track { position: relative; height: 8px; border-radius: 99px; margin-top: 4px;
+  background: linear-gradient(to right,
+    color-mix(in srgb, var(--bad) 30%, var(--track)) 0 56.7%,
+    color-mix(in srgb, var(--accent) 30%, var(--track)) 56.7% 70.8%,
+    color-mix(in srgb, var(--good) 38%, var(--track)) 70.8% 100%); }
+.meter-dot { position: absolute; top: 50%; width: 16px; height: 16px; border-radius: 50%; background: var(--surface); border: 3px solid var(--k); box-sizing: border-box; transform: translate(-50%, -50%); transition: left .3s ease; }
+
+.factors { list-style: none; margin: 0; padding: 0; display: grid; }
+.factor { display: grid; grid-template-columns: minmax(0, 1fr) 56px 30px; gap: 10px; align-items: center; padding-block: 6px; border-top: 1px solid var(--line); }
+.factor:first-child { border-top: 0; }
+.f-text { min-width: 0; font-size: .82rem; line-height: 1.3; }
+.f-text b { font-size: .84rem; }
+.f-text span { color: var(--muted); }
+.f-bar { position: relative; height: 6px; background: var(--track); border-radius: 99px; overflow: hidden; }
+.f-bar::after { content: ""; position: absolute; left: 50%; top: 0; bottom: 0; width: 1px; background: var(--muted); opacity: .5; }
+.f-fill { position: absolute; top: 0; bottom: 0; transition: width .3s ease; }
+.f-fill.pos { left: 50%; background: var(--good); }
+.f-fill.neg { right: 50%; background: var(--bad); }
+.f-val { font-family: var(--f-mono); font-size: .8rem; text-align: right; font-variant-numeric: tabular-nums; }
+.f-val.pos { color: var(--good); } .f-val.neg { color: var(--bad); } .f-val.zero { color: var(--muted); }
+.tips { margin: 0; padding-left: 1.05rem; display: grid; gap: 4px; font-size: .86rem; }
+.tips li::marker { color: var(--k); }
+
+footer { margin-top: 18px; color: var(--muted); font-size: .78rem; }
+footer p { margin: 0; max-width: 60rem; }
+
+/* Mobile verdict bar */
+.mbar {
+  --k: var(--accent);
+  position: fixed; left: 0; right: 0; bottom: 0; z-index: 20; display: none; align-items: center; gap: 10px;
+  padding-top: 9px; padding-bottom: calc(9px + env(safe-area-inset-bottom, 0px));
+  padding-left: max(16px, env(safe-area-inset-left, 0px)); padding-right: max(16px, env(safe-area-inset-right, 0px));
+  background: var(--surface); border-top: 3px solid var(--k); box-shadow: 0 -8px 24px -18px rgb(20 24 70 / .5);
+}
+.mbar .m-text { flex: 1; min-width: 0; font-weight: 700; font-size: .92rem; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.mbar button { min-height: 36px; padding: 0 14px; border: 0; border-radius: 10px; background: var(--accent); color: var(--accent-ink); font-weight: 700; font-size: .85rem; cursor: pointer; }
+
+@media (max-width: 860px) {
+  .grid { grid-template-columns: minmax(0, 1fr); gap: 14px; }
+  .result { position: static; }
+  .mbar { display: flex; }
+  .wrap { padding-bottom: 90px; }
+}
+@media (max-width: 520px) {
+  .row { grid-template-columns: minmax(0, 1fr); gap: 7px; padding-block: 10px; }
+  .panel { padding: 2px 14px; }
+  .seg label { font-size: .74rem; }
+  .ctrl { gap: 8px 10px; }
+  .pair { gap: 5px; }
+  .ctrl.two { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .two .pair { min-width: 0; }
+  .two .pair.full { grid-column: 1 / -1; }
+  .two input[type="time"] { flex: 1; width: 100%; }
+  .step button { width: 30px; height: 36px; flex: none; }
+  .step output { min-width: 0; flex: 1; font-size: .84rem; }
+  .two .step { flex: 1; min-width: 0; }
+  input[type="time"] { font-size: .82rem; padding: 0 6px; min-height: 36px; }
+  .card { padding: 16px; }
+  .v-title { font-size: 1.55rem; }
+  .tag { display: none; }
+}
+@media (prefers-reduced-motion: reduce) {
+  * { transition: none !important; }
+}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="top">
+    <p class="brand">
+      <svg viewBox="0 0 24 24" aria-hidden="true"><path fill="currentColor" d="M14.5 2.5a9.5 9.5 0 1 0 7 15.9A8 8 0 0 1 14.5 2.5Z"/></svg>
+      Snoozebaani
+    </p>
+    <p class="tag">Should you nap right now? Tap in your numbers, the answer updates as you go.</p>
+    <button type="button" class="reset" id="resetBtn">
+      <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M2.5 8a5.5 5.5 0 1 0 1.7-4M2.5 2.5V5.5h3" stroke="currentColor" stroke-width="1.7" stroke-linecap="round" stroke-linejoin="round" fill="none"/></svg>
+      Reset
+    </button>
+  </header>
+
+  <main class="grid">
+    <form class="panel" id="form" novalidate>
+      <div class="row">
+        <span class="rl">Sleep</span>
+        <div class="ctrl two">
+          <span class="pair"><span class="mini">Got</span>
+            <span class="step" data-field="sleepHours" data-min="0" data-max="14" data-step="0.5">
+              <button type="button" data-d="-1" aria-label="Less sleep">−</button><output id="sleepHoursOut" aria-live="polite">6h</output><button type="button" data-d="1" aria-label="More sleep">+</button>
+            </span></span>
+          <span class="pair"><span class="mini">Need</span>
+            <span class="step" data-field="sleepNeed" data-min="5" data-max="10" data-step="0.5">
+              <button type="button" data-d="-1" aria-label="Need less sleep">−</button><output id="sleepNeedOut" aria-live="polite">8h</output><button type="button" data-d="1" aria-label="Need more sleep">+</button>
+            </span></span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rl">Times</span>
+        <div class="ctrl two">
+          <label class="pair"><span class="mini">Woke</span><input type="time" id="wakeTime" value="07:00"></label>
+          <label class="pair"><span class="mini">Bed</span><input type="time" id="bedTime" value="23:00"></label>
+          <span class="pair full"><label class="mini" for="nowTime">Now</label><input type="time" id="nowTime" value="14:00">
+            <label class="tog" for="liveNow"><input type="checkbox" id="liveNow" checked><span>Live</span></label></span>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rl" id="lblSleepy">Sleepy</span>
+        <div class="ctrl">
+          <div class="seg" role="radiogroup" aria-labelledby="lblSleepy">
+            <input type="radio" name="sleepiness" id="sl1" value="1"><label for="sl1">Alert</label>
+            <input type="radio" name="sleepiness" id="sl2" value="2"><label for="sl2">Fine</label>
+            <input type="radio" name="sleepiness" id="sl3" value="3"><label for="sl3">Tired</label>
+            <input type="radio" name="sleepiness" id="sl4" value="4"><label for="sl4">Drowsy</label>
+            <input type="radio" name="sleepiness" id="sl5" value="5"><label for="sl5">Nodding off</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rl" id="lblStress">Stress</span>
+        <div class="ctrl">
+          <div class="seg" role="radiogroup" aria-labelledby="lblStress">
+            <input type="radio" name="stress" id="st1" value="1"><label for="st1">Calm</label>
+            <input type="radio" name="stress" id="st2" value="2"><label for="st2">Low</label>
+            <input type="radio" name="stress" id="st3" value="3"><label for="st3">Some</label>
+            <input type="radio" name="stress" id="st4" value="4"><label for="st4">High</label>
+            <input type="radio" name="stress" id="st5" value="5"><label for="st5">Wired</label>
+          </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rl">Caffeine</span>
+        <div class="ctrl col">
+          <div class="qadd" id="qadd" aria-label="Add a drink at the current time"></div>
+          <ul class="dlist" id="drinkList" aria-label="Drinks today"></ul>
+          <p class="caff-sum" id="caffSum"></p>
+        </div>
+      </div>
+
+      <div class="row">
+        <span class="rl" id="lblAvail">Free time</span>
+        <div class="ctrl">
+          <div class="seg four" role="radiogroup" aria-labelledby="lblAvail">
+            <input type="radio" name="avail" id="av10" value="10"><label for="av10">10 min</label>
+            <input type="radio" name="avail" id="av25" value="25"><label for="av25">25 min</label>
+            <input type="radio" name="avail" id="av45" value="45"><label for="av45">45 min</label>
+            <input type="radio" name="avail" id="av120" value="120"><label for="av120">90+ min</label>
+          </div>
+          <label class="tog" for="needSharp"><input type="checkbox" id="needSharp"><span>Must be sharp right after</span></label>
+        </div>
+      </div>
+    </form>
+
+    <aside class="result" id="result" aria-live="polite">
+      <div class="card" id="card" data-kind="nap">
+        <div class="verdict">
+          <span class="pill" id="vPill">Nap</span>
+          <h2 class="v-title" id="vTitle">Take a nap</h2>
+          <p class="v-sub" id="vSub"></p>
+        </div>
+        <div class="plan" id="plan"></div>
+        <div class="dialwrap">
+          <svg class="dial" id="dial" viewBox="0 0 240 240" role="img" aria-label="24-hour clock showing your sleep, afternoon dip and nap"></svg>
+          <ul class="legend">
+            <li><i class="sw sleep"></i>Night sleep</li>
+            <li><i class="sw dip"></i>Afternoon dip</li>
+            <li><i class="sw late"></i>Too close to bed</li>
+            <li id="legNap"><i class="sw nap"></i>Your nap</li>
+            <li><i class="sw now"></i>Now</li>
+          </ul>
+        </div>
+        <div class="sec">
+          <div class="sec-head"><h3>Why</h3><span class="val" id="scoreVal">0</span></div>
+          <div class="meter-track"><span class="meter-dot" id="meterDot"></span></div>
+          <ul class="factors" id="factors"></ul>
+        </div>
+        <div class="sec">
+          <h3 id="tipsTitle">Before you lie down</h3>
+          <ul class="tips" id="tips"></ul>
+        </div>
+      </div>
+    </aside>
+  </main>
+
+  <footer>
+    <p>General guidance, not medical advice. If you're regularly exhausted despite enough sleep, talk to a doctor.</p>
+  </footer>
+</div>
+
+<div class="mbar" id="mbar">
+  <span class="pill" id="mPill">Nap</span>
+  <span class="m-text" id="mText"></span>
+  <button type="button" id="mSee">See why</button>
+</div>
+
+<script>
+(() => {
+  const DRINKS = [
+    { id: 'coffee', name: 'Coffee', mg: 95 },
+    { id: 'espresso', name: 'Espresso', mg: 65 },
+    { id: 'coldbrew', name: 'Cold brew', mg: 200 },
+    { id: 'blacktea', name: 'Black tea', mg: 47 },
+    { id: 'greentea', name: 'Green tea', mg: 28 },
+    { id: 'energy', name: 'Energy drink', mg: 160 },
+    { id: 'cola', name: 'Cola', mg: 34 },
+    { id: 'preworkout', name: 'Pre-workout', mg: 200 },
+  ];
+  const BY_ID = Object.fromEntries(DRINKS.map(d => [d.id, d]));
+  const KEY = 'napwindow.v1';
+  const DEFAULTS = {
+    sleepHours: 6, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
+    sleepiness: '4', stress: '3', avail: '25', needSharp: false,
+    drinks: [{ type: 'coffee', time: '08:00' }],
+  };
+  // What Reset returns to: no drinks, neutral feelings, a full night's sleep
+  const CLEARED = {
+    sleepHours: 8, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
+    sleepiness: '3', stress: '2', avail: '25', needSharp: false, drinks: [],
+  };
+  const HALF_LIFE_MIN = 300;   // caffeine half-life
+  const ONSET_MIN = 20;        // caffeine takes ~20 min to kick in
+  const FALL_ASLEEP_MIN = 7;
+
+  const $ = s => document.querySelector(s);
+  const toMin = t => { const [h, m] = String(t || '00:00').split(':').map(Number); return (h || 0) * 60 + (m || 0); };
+  const wrap = m => ((Math.round(m) % 1440) + 1440) % 1440;
+  const toHHMM = m => { m = wrap(m); return String(Math.floor(m / 60)).padStart(2, '0') + ':' + String(m % 60).padStart(2, '0'); };
+  const diff = (a, b) => wrap(b - a); // minutes going forward from a to b
+  const clock = m => { m = wrap(m); const h = Math.floor(m / 60); return `${h % 12 || 12}:${String(m % 60).padStart(2, '0')} ${h < 12 ? 'AM' : 'PM'}`; };
+  const dur = m => { m = Math.max(0, Math.round(m)); const h = Math.floor(m / 60), r = m % 60; return h ? (r ? `${h}h ${r}m` : `${h}h`) : `${r}m`; };
+  const liveMin = () => { const d = new Date(); return d.getHours() * 60 + d.getMinutes(); };
+
+  let state = load();
+
+  function load() {
+    const base = JSON.parse(JSON.stringify(DEFAULTS));
+    try {
+      const s = JSON.parse(localStorage.getItem(KEY) || 'null');
+      if (s && typeof s === 'object') {
+        Object.assign(base, s);
+        base.drinks = Array.isArray(s.drinks) ? s.drinks.filter(d => d && BY_ID[d.type]) : base.drinks;
+      }
+    } catch (e) {}
+    return base;
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+
+  function checkRadio(name, value) {
+    const el = document.querySelector(`input[name="${name}"][value="${value}"]`) || document.querySelector(`input[name="${name}"]`);
+    el.checked = true;
+  }
+
+  function stateToForm() {
+    $('#wakeTime').value = state.wakeTime;
+    $('#bedTime').value = state.bedTime;
+    $('#needSharp').checked = !!state.needSharp;
+    checkRadio('sleepiness', state.sleepiness);
+    checkRadio('stress', state.stress);
+    checkRadio('avail', state.avail);
+    $('#nowTime').value = toHHMM(liveMin());
+    $('#qadd').innerHTML = DRINKS.map(d => `<button type="button" data-add="${d.id}">+ ${d.name} <b>${d.mg}</b></button>`).join('');
+    renderDrinks();
+  }
+
+  function formToState() {
+    state.wakeTime = $('#wakeTime').value || state.wakeTime;
+    state.bedTime = $('#bedTime').value || state.bedTime;
+    state.needSharp = $('#needSharp').checked;
+    state.sleepiness = document.querySelector('input[name="sleepiness"]:checked').value;
+    state.stress = document.querySelector('input[name="stress"]:checked').value;
+    state.avail = document.querySelector('input[name="avail"]:checked').value;
+  }
+
+  function renderDrinks() {
+    $('#drinkList').innerHTML = state.drinks.map((d, i) => `
+      <li class="dchip">${BY_ID[d.type].name}
+        <input type="time" id="drink-time-${i}" data-idx="${i}" value="${d.time}" aria-label="Time of ${BY_ID[d.type].name}">
+        <button type="button" data-remove="${i}" aria-label="Remove ${BY_ID[d.type].name}">
+          <svg viewBox="0 0 16 16" aria-hidden="true"><path d="M3.5 3.5l9 9m0-9l-9 9" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/></svg>
+        </button>
+      </li>`).join('');
+  }
+
+  // ---- Decision engine ----
+  function evaluate(s, now) {
+    const wake = toMin(s.wakeTime), bed = toMin(s.bedTime);
+    const inSleepWindow = diff(bed, now) < diff(bed, wake);
+    const upMin = diff(wake, now), bedMin = diff(now, bed);
+    const W = upMin / 60, B = bedMin / 60;
+    const debt = Math.max(0, s.sleepNeed - s.sleepHours);
+    const sleepiness = +s.sleepiness, stress = +s.stress, avail = +s.avail;
+
+    let active = 0, recent = 0, atBed = 0;
+    for (const d of s.drinks) {
+      const mg = BY_ID[d.type].mg, ago = diff(toMin(d.time), now);
+      if (ago < ONSET_MIN) recent += mg; else active += mg * Math.pow(0.5, ago / HALF_LIFE_MIN);
+      atBed += mg * Math.pow(0.5, (ago + bedMin) / HALF_LIFE_MIN);
+    }
+
+    const factors = [];
+    factors.push(debt <= 0
+      ? { label: 'Sleep', pts: -8, note: `${dur(s.sleepHours * 60)}, no sleep debt` }
+      : { label: 'Sleep', pts: Math.round(Math.min(debt, 4) * 11), note: `${dur(debt * 60)} short of your ${dur(s.sleepNeed * 60)}` });
+
+    const dipStart = wake + 360, dipEnd = wake + 540;
+    if (W < 3) {
+      factors.push({ label: 'Body clock', pts: -12, note: `Up only ${dur(upMin)}, sleep pressure is low` });
+    } else {
+      const dip = Math.round(22 * Math.exp(-((W - 7.5) ** 2) / (2 * 1.3 ** 2)));
+      const note = W >= 6 && W <= 9 ? `In your afternoon dip (${clock(dipStart)}–${clock(dipEnd)})`
+        : W < 6 ? `Dip starts around ${clock(dipStart)}`
+        : 'Afternoon dip has passed';
+      factors.push({ label: 'Body clock', pts: dip, note });
+    }
+
+    const bedPts = B < 4 ? -45 : B < 6 ? -25 : B < 7 ? -12 : B < 8 ? -4 : 0;
+    factors.push({ label: 'Bedtime', pts: bedPts, note: bedPts ? `${dur(bedMin)} away, a nap may delay sleep` : `${dur(bedMin)} away, plenty of buffer` });
+
+    const sleepyNotes = ['', 'Feeling alert', 'Feeling fine', 'A bit tired', 'Drowsy', 'Nodding off'];
+    factors.push({ label: 'Sleepiness', pts: (sleepiness - 3) * 10, note: sleepyNotes[sleepiness] });
+
+    const caffPts = active >= 200 ? -18 : active >= 120 ? -10 : active >= 60 ? -4 : 0;
+    let caffNote = s.drinks.length ? `~${Math.round(active)} mg active` : 'None today';
+    if (recent) caffNote += `, ${Math.round(recent)} mg kicking in soon`;
+    factors.push({ label: 'Caffeine', pts: caffPts, note: caffNote });
+
+    const stressPts = [0, 0, 0, -2, -6, -10][stress];
+    const stressNotes = ['', 'Calm', 'Low', 'Manageable', 'May keep you from dozing off', 'Hard to fall asleep when wired'];
+    factors.push({ label: 'Stress', pts: stressPts, note: stressNotes[stress] });
+
+    const total = factors.reduce((a, f) => a + f.pts, 0);
+
+    let kind;
+    if (inSleepWindow) kind = 'bed';
+    else if (B < 3) kind = 'skip';
+    else if (total >= 25) kind = 'nap';
+    else if (total >= 8) kind = 'short';
+    else kind = 'skip';
+    if (kind === 'nap' && B < 7) kind = 'short'; // within ~7h of bed, only a brief nap
+    if ((kind === 'nap' || kind === 'short') && avail < 15) kind = 'rest';
+
+    let len = 0;
+    if (kind === 'nap') len = (avail >= 100 && debt >= 1.5 && B >= 8.5 && !s.needSharp) ? 90 : 20;
+    if (kind === 'short') len = B < 7 ? 10 : 15;
+    if (kind === 'rest') len = 10;
+    const alarm = now + (kind === 'rest' ? 0 : FALL_ASLEEP_MIN) + len;
+
+    return { kind, total, factors, len, alarm, now, wake, bed, bedMin, upMin, debt, active, recent, atBed, stress, inSleepWindow, avail, needSharp: s.needSharp };
+  }
+
+  // ---- Rendering ----
+  const PILL = { nap: 'Nap', short: 'Short nap', rest: 'Rest', skip: 'Skip', bed: 'Sleep time' };
+  const TITLE = { nap: 'Take a nap', short: 'A short nap is fine', rest: "Rest, don't sleep", skip: 'Skip the nap', bed: 'Go to bed instead' };
+
+  function copy(r) {
+    const earlier = Math.min(60, Math.max(15, Math.round(r.debt * 20 / 15) * 15));
+    const debtLabel = r.debt > 0 ? dur(r.debt * 60) : 'None';
+    let sub, stats, tipsTitle;
+    const tips = [];
+    switch (r.kind) {
+      case 'nap':
+        sub = r.len === 90
+          ? "You have time for one full 90-minute sleep cycle, which pays back some of last night's debt."
+          : 'A 20-minute power nap clears the fog without leaving you groggy.';
+        break;
+      case 'short':
+        sub = `Keep it to ${r.len} minutes so it won't cut into tonight's sleep.`;
+        break;
+      case 'rest':
+        sub = 'Not enough time to fall asleep and wake cleanly. Close your eyes for 10 minutes.';
+        break;
+      case 'skip':
+        sub = r.bedMin < 180
+          ? 'Bedtime is too close. Go to bed a little early instead.'
+          : "A nap now is more likely to hurt tonight's sleep than help today.";
+        break;
+      case 'bed':
+        sub = `You're inside your usual sleep hours (${clock(r.bed)} to ${clock(r.wake)}).`;
+        break;
+    }
+    if (r.kind === 'nap' || r.kind === 'short') {
+      stats = [['Nap', `${r.len} min`], ['Alarm', clock(r.alarm)], ['Bed in', dur(r.bedMin)]];
+      tipsTitle = 'Before you lie down';
+      tips.push(`Set an alarm for ${clock(r.alarm)} (includes ~7 min to fall asleep).`);
+      if (r.recent && r.len <= 20) tips.push('Good timing: the caffeine you just had kicks in as you wake.');
+      else if (r.len <= 20 && r.active < 120 && r.bedMin >= 540) tips.push('Coffee nap: drink a coffee right before lying down.');
+      if (r.len < 90) tips.push('Get up when the alarm goes. Past 30 minutes you wake groggy.');
+      else tips.push('Expect a few groggy minutes. Bright light helps.');
+      if (r.stress >= 4) tips.push('Mind racing? Breathe 4 seconds in, 6 out. Quiet rest still helps.');
+    } else if (r.kind === 'rest') {
+      stats = [['Rest', '10 min'], ['Back at', clock(r.alarm)], ['Bed in', dur(r.bedMin)]];
+      tipsTitle = 'How to rest';
+      tips.push('Set a 10-minute timer, close your eyes and let your thoughts drift.');
+      if (r.stress >= 4) tips.push('Use the time for slow breathing: 4 seconds in, 6 out.');
+      tips.push('Free up 25 minutes later? Check again for a proper nap.');
+    } else if (r.kind === 'skip') {
+      stats = [['Sleep debt', debtLabel], ['Caffeine', `${Math.round(r.active + r.recent)} mg`], ['Bed in', dur(r.bedMin)]];
+      tipsTitle = 'Try instead';
+      tips.push('Get 10 minutes of daylight or take a brisk walk.');
+      if (r.debt >= 0.75) tips.push(`Go to bed around ${clock(r.bed - earlier)} tonight, ${earlier} minutes early.`);
+      if (r.stress >= 4) tips.push('Try 5 minutes of slow breathing: 4 seconds in, 6 out.');
+      if (r.active < 80 && r.bedMin >= 540) tips.push('A small coffee or tea is fine, bedtime is 9+ hours away.');
+    } else {
+      stats = [['Wake at', clock(r.wake)], ['Sleep left', dur(diff(r.now, r.wake))], ['Sleep debt', debtLabel]];
+      tipsTitle = 'Tonight';
+      tips.push('Keep the lights dim and put screens away.');
+      tips.push("Can't fall asleep in ~20 minutes? Get up and do something calm until sleepy.");
+      if (r.atBed >= 50) tips.push(`~${Math.round(r.atBed)} mg of caffeine is still in your system.`);
+    }
+    return { sub, stats, tipsTitle, tips };
+  }
+
+  function pt(m, r) {
+    const a = (m / 1440 * 360 + 90) * Math.PI / 180; // midnight at bottom, noon at top
+    return [120 + r * Math.cos(a), 120 + r * Math.sin(a)];
+  }
+  function arc(m1, m2, r) {
+    let span = diff(m1, m2);
+    if (span === 0) return '';
+    if (span >= 1439) span = 1439.5;
+    const [x1, y1] = pt(m1, r), [x2, y2] = pt(m1 + span, r);
+    return `M${x1.toFixed(2)} ${y1.toFixed(2)} A${r} ${r} 0 ${span > 720 ? 1 : 0} 1 ${x2.toFixed(2)} ${y2.toFixed(2)}`;
+  }
+
+  function renderDial(r) {
+    const R = 100, W = 14;
+    const path = (d, cls, w = W) => d ? `<path d="${d}" class="${cls}" fill="none" stroke-width="${w}" stroke-linecap="butt"/>` : '';
+    let ticks = '';
+    for (let h = 0; h < 24; h++) {
+      const [x1, y1] = pt(h * 60, 86), [x2, y2] = pt(h * 60, h % 6 === 0 ? 79 : 83);
+      ticks += `<line x1="${x1.toFixed(2)}" y1="${y1.toFixed(2)}" x2="${x2.toFixed(2)}" y2="${y2.toFixed(2)}" class="d-tick" stroke-width="1.2"/>`;
+    }
+    const lbls = [[0, '12a'], [360, '6a'], [720, '12p'], [1080, '6p']].map(([m, t]) => {
+      const [x, y] = pt(m, 68);
+      return `<text x="${x.toFixed(1)}" y="${(y + 3).toFixed(1)}" text-anchor="middle" class="d-lbl">${t}</text>`;
+    }).join('');
+    const napArc = (r.kind === 'nap' || r.kind === 'short' || r.kind === 'rest')
+      ? path(arc(r.now, r.alarm, R), 'd-nap', 8) : '';
+    const [nx, ny] = pt(r.now, R);
+    const [hh, ap] = clock(r.now).split(' ');
+    const sub = r.inSleepWindow ? `wake ${clock(r.wake)}` : `bed in ${dur(r.bedMin)}`;
+    $('#dial').innerHTML = `
+      <circle cx="120" cy="120" r="${R}" class="d-track" fill="none" stroke-width="${W}"/>
+      ${path(arc(r.bed - 420, r.bed, R), 'd-late')}
+      ${path(arc(r.wake + 360, r.wake + 540, R), 'd-dip')}
+      ${path(arc(r.bed, r.wake, R), 'd-sleep')}
+      ${napArc}
+      ${ticks}${lbls}
+      <text x="120" y="122" text-anchor="middle" class="d-time">${hh}<tspan font-size="13" dx="3">${ap}</tspan></text>
+      <text x="120" y="142" text-anchor="middle" class="d-sub">${sub}</text>
+      <circle cx="${nx.toFixed(2)}" cy="${ny.toFixed(2)}" r="8" class="d-now"/>`;
+    $('#legNap').hidden = !napArc;
+  }
+
+  function render(r) {
+    const c = copy(r);
+    $('#card').dataset.kind = r.kind;
+    $('#mbar').dataset.kind = r.kind;
+    $('#vPill').textContent = $('#mPill').textContent = PILL[r.kind];
+    $('#vTitle').textContent = TITLE[r.kind];
+    $('#vSub').textContent = c.sub;
+    $('#mText').textContent = (r.kind === 'nap' || r.kind === 'short') ? `${r.len} min, alarm ${clock(r.alarm)}` : TITLE[r.kind];
+    $('#plan').innerHTML = c.stats.map(([k, v]) => `<div class="stat"><span>${k}</span><b>${v}</b></div>`).join('');
+    renderDial(r);
+
+    const clamped = Math.max(-60, Math.min(60, r.total));
+    $('#meterDot').style.left = ((clamped + 60) / 120 * 100) + '%';
+    $('#scoreVal').textContent = `score ${r.total > 0 ? '+' : ''}${r.total}`;
+
+    $('#factors').innerHTML = r.factors.map(f => {
+      const cls = f.pts > 0 ? 'pos' : f.pts < 0 ? 'neg' : 'zero';
+      const w = Math.min(50, Math.abs(f.pts) / 45 * 50);
+      return `<li class="factor">
+        <div class="f-text"><b>${f.label}</b> <span>${f.note}</span></div>
+        <div class="f-bar" aria-hidden="true">${f.pts ? `<span class="f-fill ${cls}" style="width:${w}%"></span>` : ''}</div>
+        <span class="f-val ${cls}">${f.pts > 0 ? '+' : ''}${f.pts}</span>
+      </li>`;
+    }).join('');
+    $('#tipsTitle').textContent = c.tipsTitle;
+    $('#tips').innerHTML = c.tips.map(t => `<li>${t}</li>`).join('');
+
+    $('#caffSum').textContent = state.drinks.length
+      ? `≈ ${Math.round(r.active + r.recent)} mg in you now · ≈ ${Math.round(r.atBed)} mg at bedtime`
+      : 'Tap a drink to log it at the current time.';
+  }
+
+  function update() {
+    formToState();
+    $('#sleepHoursOut').textContent = dur(state.sleepHours * 60);
+    $('#sleepNeedOut').textContent = dur(state.sleepNeed * 60);
+    render(evaluate(state, toMin($('#nowTime').value || toHHMM(liveMin()))));
+    save();
+  }
+
+  // ---- Events ----
+  const form = $('#form');
+  form.addEventListener('submit', e => e.preventDefault());
+  form.addEventListener('input', e => {
+    const t = e.target;
+    if (t.id === 'nowTime') $('#liveNow').checked = false;
+    if (t.id === 'liveNow' && t.checked) $('#nowTime').value = toHHMM(liveMin());
+    if (t.dataset.idx !== undefined && t.value) {
+      const d = state.drinks[+t.dataset.idx];
+      if (d) d.time = t.value;
+    }
+    update();
+  });
+  form.addEventListener('click', e => {
+    const stepBtn = e.target.closest('[data-d]');
+    if (stepBtn) {
+      const box = stepBtn.closest('.step'), f = box.dataset.field;
+      const next = state[f] + (+stepBtn.dataset.d) * (+box.dataset.step);
+      state[f] = Math.min(+box.dataset.max, Math.max(+box.dataset.min, next));
+      update();
+      return;
+    }
+    const add = e.target.closest('[data-add]');
+    if (add) {
+      state.drinks.push({ type: add.dataset.add, time: $('#nowTime').value || toHHMM(liveMin()) });
+      renderDrinks();
+      update();
+      return;
+    }
+    const rm = e.target.closest('[data-remove]');
+    if (rm) {
+      state.drinks.splice(+rm.dataset.remove, 1);
+      renderDrinks();
+      update();
+    }
+  });
+  $('#resetBtn').addEventListener('click', () => {
+    state = JSON.parse(JSON.stringify(CLEARED));
+    try { localStorage.removeItem(KEY); } catch (e) {}
+    $('#liveNow').checked = true;
+    stateToForm();
+    update();
+  });
+  $('#mSee').addEventListener('click', () => $('#result').scrollIntoView({ behavior: 'smooth', block: 'start' }));
+
+  setInterval(() => {
+    if ($('#liveNow').checked) {
+      const t = toHHMM(liveMin());
+      if ($('#nowTime').value !== t) { $('#nowTime').value = t; update(); }
+    }
+  }, 15000);
+
+  if ('IntersectionObserver' in window) {
+    new IntersectionObserver(([entry]) => { $('#mbar').hidden = entry.isIntersecting; }, { threshold: 0.15 }).observe($('#card'));
+  }
+
+  stateToForm();
+  update();
+})();
+</script>
+
+</body>
+</html>
