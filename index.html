@@ -189,6 +189,16 @@ input[type="time"]:focus { border-color: var(--c); outline: none; }
 .caff-sum { display: flex; align-items: center; gap: 7px; font-family: var(--f-mono); font-size: .78rem; color: var(--muted); margin: 0; }
 .caff-sum .lucide { width: 14px; height: 14px; color: var(--c); }
 
+.stressors { display: grid; gap: 8px; }
+.schips { display: flex; flex-wrap: wrap; gap: 7px; }
+.schips button { display: inline-flex; align-items: center; gap: 6px; min-height: 36px; padding: 0 12px 0 10px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-size: .84rem; cursor: pointer; white-space: nowrap; }
+.schips button .lucide { width: 15px; height: 15px; color: var(--c); }
+.schips button:hover { border-color: var(--c); }
+.schips button[aria-pressed="true"] { background: var(--c); border-color: var(--c); color: var(--surface); font-weight: 700; }
+.schips button[aria-pressed="true"] .lucide { color: var(--surface); }
+.s-comfort { display: flex; gap: 10px; align-items: flex-start; margin: 2px 0 0; padding: 12px 14px; border-radius: 14px;
+  background: color-mix(in srgb, var(--c) 10%, transparent); border-left: 3px solid var(--c); font-size: .9rem; line-height: 1.45; }
+.s-comfort .lucide { width: 18px; height: 18px; color: var(--c); margin-top: 1px; }
 .event-row { display: grid; grid-template-columns: minmax(0, 170px) minmax(0, 1fr); gap: 12px; align-items: end; }
 .qset { display: flex; flex-wrap: wrap; gap: 6px; }
 .qset button { min-height: 36px; padding: 0 12px; border: 1px solid var(--line); border-radius: 99px; background: var(--surface); font-size: .82rem; cursor: pointer; white-space: nowrap; }
@@ -441,6 +451,11 @@ footer p { margin: 0; }
           <input type="radio" name="stress" id="st4" value="4"><label for="st4"><i data-lucide="frown"></i><span class="lt" data-t="High">High</span></label>
           <input type="radio" name="stress" id="st5" value="5"><label for="st5"><i data-lucide="zap"></i><span class="lt" data-t="Wired">Wired</span></label>
         </div>
+        <div class="stressors">
+          <span class="mini"><i data-lucide="list-checks"></i>What's stressing you?</span>
+          <div class="schips" id="stressors" aria-label="Pick the one weighing on you most"></div>
+          <p class="s-comfort" id="sComfort" aria-live="polite" hidden></p>
+        </div>
       </div>
 
       <div class="tile t-caff">
@@ -551,13 +566,13 @@ footer p { margin: 0; }
   const KEY = 'napwindow.v1';
   const DEFAULTS = {
     sleepHours: 6, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
-    sleepiness: '4', stress: '3', eventTime: '', needSharp: false,
+    sleepiness: '4', stress: '3', stressors: [], eventTime: '', needSharp: false,
     drinks: [{ type: 'coffee', time: '08:00' }],
   };
   // What Reset returns to: no drinks, neutral feelings, a full night's sleep
   const CLEARED = {
     sleepHours: 8, sleepNeed: 8, wakeTime: '07:00', bedTime: '23:00',
-    sleepiness: '3', stress: '2', eventTime: '', needSharp: false, drinks: [],
+    sleepiness: '3', stress: '2', stressors: [], eventTime: '', needSharp: false, drinks: [],
   };
   const HALF_LIFE_MIN = 300;   // caffeine half-life
   const ONSET_MIN = 20;        // caffeine takes ~20 min to kick in
@@ -584,6 +599,7 @@ footer p { margin: 0; }
       if (s && typeof s === 'object') {
         Object.assign(base, s);
         base.drinks = Array.isArray(s.drinks) ? s.drinks.filter(d => d && BY_ID[d.type]) : base.drinks;
+        base.stressors = Array.isArray(s.stressors) ? s.stressors.slice(0, 1) : [];
       }
     } catch (e) {}
     return base;
@@ -602,6 +618,7 @@ footer p { margin: 0; }
     checkRadio('sleepiness', state.sleepiness);
     checkRadio('stress', state.stress);
     $('#eventTime').value = state.eventTime || '';
+    renderStressors();
     $('#nowTime').value = toHHMM(liveMin());
     $('#qadd').innerHTML = DRINKS.map(d => `<button type="button" data-add="${d.id}">${ico(d.icon)}${d.name} <b>${d.mg}mg</b></button>`).join('');
     renderDrinks();
@@ -677,6 +694,7 @@ footer p { margin: 0; }
     const stressPts = [0, 0, 0, -2, -6, -10][stress];
     const stressNotes = ['', 'Calm', 'Low', 'Manageable', 'May keep you from dozing off', 'Hard to fall asleep when wired'];
     factors.push({ label: 'Stress', icon: 'heart-pulse', pts: stressPts, note: stressNotes[stress] });
+    if ((s.stressors || []).includes('racing')) factors.push({ label: 'Racing mind', icon: 'brain', pts: -6, note: 'Busy thoughts make it hard to doze off' });
 
     const total = factors.reduce((a, f) => a + f.pts, 0);
 
@@ -704,7 +722,42 @@ footer p { margin: 0; }
     if (kind === 'rest') len = Math.max(5, Math.min(10, Math.floor(avail)));
     const alarm = now + (kind === 'rest' ? 0 : FALL_ASLEEP_MIN) + len;
 
-    return { kind, total, factors, len, alarm, now, wake, bed, bedMin, upMin, debt, active, recent, atBed, stress, inSleepWindow, avail, needSharp: s.needSharp, hasEvent, eventMin, evtAt, eventPassed, eventTooSoon };
+    return { kind, total, factors, len, alarm, now, wake, bed, bedMin, upMin, debt, active, recent, atBed, stress, stressors: s.stressors || [], inSleepWindow, avail, needSharp: s.needSharp, hasEvent, eventMin, evtAt, eventPassed, eventTooSoon };
+  }
+
+  // ---- What's stressing you ----
+  const STRESSORS = [
+    { id: 'work', label: 'Work/School', icon: 'briefcase',
+      comfort: "Work and school will still be there after a short break. Resting isn't falling behind. It's how you keep up." },
+    { id: 'deadline', label: 'Deadline', icon: 'calendar-clock',
+      comfort: "Deadlines feel huge in the moment, but you've made it through tight ones before. A clear head will get this done faster than a tired one." },
+    { id: 'people', label: 'People', icon: 'users',
+      comfort: "Things with people can weigh a lot. You don't have to sort it out right now. It's okay to set it down for a little while." },
+    { id: 'health', label: 'Health', icon: 'stethoscope',
+      comfort: 'Not feeling your best is hard. Be gentle with yourself today. Rest is one of the kindest things you can give your body.' },
+    { id: 'money', label: 'Money', icon: 'wallet',
+      comfort: "Money stress is real, and you're far from alone in it. One small step at a time is enough. You don't have to fix it all today." },
+    { id: 'racing', label: 'Racing thoughts', icon: 'brain',
+      comfort: "A busy mind doesn't mean something is wrong. Thoughts drift by like clouds, and you don't have to follow every one." },
+  ];
+  // Only one stressor at a time; the comfort note for it shows underneath
+  function renderStressors() {
+    const on = (state.stressors || [])[0];
+    $('#stressors').innerHTML = STRESSORS.map(s =>
+      `<button type="button" data-stressor="${s.id}" aria-pressed="${s.id === on}">${ico(s.icon)}${s.label}</button>`).join('');
+    const pick = STRESSORS.find(s => s.id === on);
+    $('#sComfort').hidden = !pick;
+    $('#sComfort').innerHTML = pick ? `${ico('heart-handshake')}<span>${pick.comfort}</span>` : '';
+  }
+  // One tip per picked stressor; "resting" is true when the answer is to nap or rest
+  function stressTips(r, tip, resting) {
+    const has = id => r.stressors.includes(id);
+    if (has('racing')) tip('notebook-pen', resting ? "Jot down what's on your mind before lying down. It helps quiet racing thoughts." : 'Do a 2-minute brain dump: write down everything on your mind.');
+    if (has('deadline')) tip('calendar-clock', resting ? 'On a deadline? A short nap now can make the next couple of hours sharper than pushing through tired.' : 'On a deadline? Take a 5-minute walk, then start with the hardest part.');
+    if (has('work')) tip('briefcase', resting ? 'Close the laptop or notebook first so your brain gets the signal to switch off.' : 'Step away from work for 5 minutes. A real break resets focus better than scrolling.');
+    if (has('people')) tip('users', "Something with someone bugging you? Write down what you'd say. It can wait until after you rest.");
+    if (has('health')) tip('stethoscope', "Rest helps your body recover. If you've felt off for a while, check in with a doctor.");
+    if (has('money')) tip('wallet', 'Money worries feel bigger when you are tired. Write one small next step, then set it aside for now.');
   }
 
   // ---- Rendering ----
@@ -751,12 +804,14 @@ footer p { margin: 0; }
       else if (r.len <= 20 && r.active < 120 && r.bedMin >= 540) tip('coffee', 'Coffee nap: drink a coffee right before lying down.');
       if (r.len < 90) tip('sunrise', 'Get up when the alarm goes. Past 30 minutes you wake groggy.');
       else tip('sun', 'Expect a few groggy minutes. Bright light helps.');
-      if (r.stress >= 4) tip('wind', 'Mind racing? Breathe 4 seconds in, 6 out. Quiet rest still helps.');
+      if (r.stress >= 4) tip('wind', 'Mind busy? Breathe 4 seconds in, 6 out. Quiet rest still helps.');
+      stressTips(r, tip, true);
     } else if (r.kind === 'rest') {
       stats = [['eye-off', 'Rest', `${r.len} min`], ['alarm-clock', 'Back at', clock(r.alarm)], lastStat];
       tipsTitle = 'How to rest';
       tip('timer', `Set a ${r.len}-minute timer, close your eyes and let your thoughts drift.`);
       if (r.stress >= 4) tip('wind', 'Use the time for slow breathing: 4 seconds in, 6 out.');
+      stressTips(r, tip, true);
       tip('refresh-cw', 'Free up 25 minutes later? Check again for a proper nap.');
     } else if (r.kind === 'skip') {
       stats = [['battery-low', 'Sleep debt', debtLabel], ['coffee', 'Caffeine', `${Math.round(r.active + r.recent)} mg`], lastStat];
@@ -764,6 +819,7 @@ footer p { margin: 0; }
       tip('footprints', 'Get 10 minutes of daylight or take a brisk walk.');
       if (r.debt >= 0.75) tip('moon', `Go to bed around ${clock(r.bed - earlier)} tonight, ${earlier} minutes early.`);
       if (r.stress >= 4) tip('wind', 'Try 5 minutes of slow breathing: 4 seconds in, 6 out.');
+      stressTips(r, tip, false);
       if (r.active < 80 && r.bedMin >= 540) tip('coffee', 'A small coffee or tea is fine, bedtime is 9+ hours away.');
     } else {
       stats = [['sunrise', 'Wake at', clock(r.wake)], ['hourglass', 'Sleep left', dur(diff(r.now, r.wake))], ['battery-low', 'Sleep debt', debtLabel]];
@@ -894,6 +950,14 @@ footer p { margin: 0; }
       const box = stepBtn.closest('.step'), f = box.dataset.field;
       const next = state[f] + (+stepBtn.dataset.d) * (+box.dataset.step);
       state[f] = Math.min(+box.dataset.max, Math.max(+box.dataset.min, next));
+      update();
+      return;
+    }
+    const st = e.target.closest('[data-stressor]');
+    if (st) {
+      const id = st.dataset.stressor;
+      state.stressors = (state.stressors || [])[0] === id ? [] : [id]; // picking another replaces the old one
+      renderStressors();
       update();
       return;
     }
